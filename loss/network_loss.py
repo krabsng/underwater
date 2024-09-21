@@ -15,7 +15,8 @@ class LossNetwork(torch.nn.Module):
 
     def output_features(self, x):
         output = {}
-        for name, module in self.vgg_layers.module._modules.items(): # 由于使用了DataParallel封装需要采用该方法访问模块中的子模块
+        # for name, module in self.vgg_layers.module._modules.items(): # 由于使用了DataParallel封装需要采用该方法访问模块中的子模块
+        for name, module in self.vgg_layers._modules.items():
             x = module(x)
             if name in self.layer_name_mapping:
                 output[self.layer_name_mapping[name]] = x
