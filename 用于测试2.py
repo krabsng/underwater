@@ -7,9 +7,8 @@ from models.prompt_ir_model import PromptGenBlock
 
 
 if __name__ == '__main__':
-    print("xiegaotian")
-    print("xiegaotian")
-    print("xiegaotian")
+
+    ('cuda:{}'.format(gpu_ids[0])) if gpu_ids else torch.device('cpu')
 
 
 

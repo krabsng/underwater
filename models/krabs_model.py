@@ -633,7 +633,7 @@ class KrabsModel(BaseModel):
                     torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
         # 定义要用到的损失
         vgg_model = vgg16(pretrained=True).features[:16]  # 定义vgg网络，加载预训练权重，并把它放到gpu上去
-        vgg_model = torch.nn.DataParallel(vgg_model)  # 使用多GPU训练
+        vgg_model = torch.nn.DataParallel(vgg_model, opt.gpu_ids)  # 使用多GPU训练
         self.L1_loss = nn.L1Loss()  # 定义L1损失
         #self.L1_smooth_loss = F.smooth_l1_loss  # 定义L1smooth损失
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
@@ -658,6 +658,13 @@ class KrabsModel(BaseModel):
         self.image_paths = input['A_paths']
 
     def forward(self):
+
+        # 检查模型的第一个参数在哪个设备上
+        print(next(self.netKrabs.parameters()).device)
+        print(self.Origin_Img.device)
+        for param in self.netKrabs.parameters():
+            print(param.device)
+
         self.Generate_Img = self.netKrabs(self.Origin_Img)
 
     def backward(self):
