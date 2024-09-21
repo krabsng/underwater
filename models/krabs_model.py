@@ -664,6 +664,9 @@ class KrabsModel(BaseModel):
     def forward(self):
 
         # 检查模型的第一个参数在哪个设备上
+        print(torch.cuda.device_count())  # 确保有足够数量的 GPU
+        print(torch.cuda.get_device_name(0))  # 检查每个 GPU 的名称
+
         print(self.opt.gpu_ids)
         print(next(self.netKrabs.parameters()).device)
         print(self.Origin_Img.device)
