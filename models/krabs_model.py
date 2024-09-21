@@ -618,8 +618,8 @@ class KrabsModel(BaseModel):
         self.loss_names = ['M']
 
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netKrabs = KrabsNet(SR=self.SR).to(self.device)
-        # self.netKrabs = torch.nn.DataParallel(self.netKrabs, opt.gpu_ids)
+        self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=self.SR), opt.gpu_ids)
+        self.netKrabs = self.netKrabs.to(self.device)
 
         # 指定要保存的图像，训练/测试脚本将调用 <BaseModel.get_current_visuals>
         if self.isTrain is None:
@@ -634,10 +634,11 @@ class KrabsModel(BaseModel):
             else:
                 self.netKrabs.load_state_dict(
                     torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
+
         # 定义要用到的损失
         vgg_model = vgg16(pretrained=True).features[:16]  # 定义vgg网络，加载预训练权重，并把它放到gpu上去
         vgg_model= vgg_model.to(self.device)
-        # vgg_model = torch.nn.DataParallel(vgg_model, opt.gpu_ids)  # 使用多GPU训练
+
         self.L1_loss = nn.L1Loss()  # 定义L1损失
         #self.L1_smooth_loss = F.smooth_l1_loss  # 定义L1smooth损失
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
