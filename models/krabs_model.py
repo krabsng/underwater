@@ -612,22 +612,25 @@ class KrabsModel(BaseModel):
     def __init__(self, opt):
         super(KrabsModel, self).__init__(opt)
         self.opt = opt
+        # 是否要进行超分辨率增强
+        self.SR = True
         # 损失的名称
         self.loss_names = ['M']
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=False), opt.gpu_ids)
+        self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=self.SR), opt.gpu_ids)
         # 指定要保存的图像，训练/测试脚本将调用 <BaseModel.get_current_visuals>
         if self.isTrain is None:
             self.visual_names = ['Origin_Img', 'Generate_Img']
         else:
             self.visual_names = ['Origin_Img', 'Generate_Img', 'GT_Img']
-        # 加载网络的预训权重
-        if isinstance(self.netKrabs, torch.nn.DataParallel):
-            self.netKrabs.module.load_state_dict(
-                torch.load('/home/ljp/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
-        else:
-            self.netKrabs.load_state_dict(
-                torch.load('/home/ljp/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
+        if not self.SR:
+            # 加载网络的预训权重
+            if isinstance(self.netKrabs, torch.nn.DataParallel):
+                self.netKrabs.module.load_state_dict(
+                    torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
+            else:
+                self.netKrabs.load_state_dict(
+                    torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
         # 定义要用到的损失
         vgg_model = vgg16(pretrained=True).features[:16]  # 定义vgg网络，加载预训练权重，并把它放到gpu上去
         vgg_model = torch.nn.DataParallel(vgg_model)  # 使用多GPU训练

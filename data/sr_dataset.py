@@ -34,7 +34,7 @@ class SRDataset(BaseDataset):
         """
         # parser.add_argument('--new_dataset_option', type=float, default=1.0, help='new dataset option')
         # 这里由于需要使用超分辨率的数据，所以修改了dataroot默认值
-        parser.set_defaults(dataroot="/home/ljp/a.krabs/dataset/UFO120/train_val/")
+        parser.set_defaults(dataroot="/a.krabs/dataset/dataset/UFO120/train_val/")
         # 数组增强的方式
         parser.set_defaults(preprocess='none')
         # visdom一行显示几张图片，这里设置成0，否则会出现问题

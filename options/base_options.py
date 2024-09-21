@@ -20,11 +20,11 @@ class BaseOptions():
     def initialize(self, parser):
         """Define the common options that are used in both training and test."""
         # 基本参数
-        parser.add_argument('--dataroot', default="/home/ljp/a.krabs/dataset/EUVP/Paired/",
-                            help='图像路径（应具有子文件夹 trainA、trainB、valA、valB 等）')
-        parser.add_argument('--name', type=str, default='krabs_net',
+        parser.add_argument('--dataroot', default="/a.krabs/dataset/EUVP/Paired/",
+                            help='图像路径（应具有子文件夹 trainA、trainB、valA、valB 等）') # 在AI主机上训练设置的参数
+        parser.add_argument('--name', type=str, default='krabs_net_sr',
                             help='实验的名称。它决定将样本和模型存储在何处')
-        parser.add_argument('--gpu_ids', type=str, default='0', help='GPU ID：例如 0 0,1,2， 0,2。使用 -1 表示 CPU')
+        parser.add_argument('--gpu_ids', type=str, default='0,1,2,3', help='GPU ID：例如 0 0,1,2， 0,2。使用 -1 表示 CPU') # 在AI主机上训练设置的参数
         parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='模型保存在此处')
         # 模型参数
         parser.add_argument('--model', type=str, default='krabs',
@@ -46,13 +46,13 @@ class BaseOptions():
                             help='scaling factor for normal, xavier and orthogonal.')
         parser.add_argument('--no_dropout', action='store_true', help='生成器未使用dropout')
         # 数据集参数
-        parser.add_argument('--dataset_mode', type=str, default='underwater',
-                            help='选择数据集的加载方式。 [unaligned | aligned | single | colorization | underwater]')
+        parser.add_argument('--dataset_mode', type=str, default='sr',
+                            help='选择数据集的加载方式。 [unaligned | aligned | single | colorization | underwater | sr]')
         parser.add_argument('--direction', type=str, default='AtoB', help='AtoB 或 BtoA')
         parser.add_argument('--serial_batches', action='store_true',
                             help='如果为 true，则拍摄图像以进行批量处理，否则随机拍摄图像')
         parser.add_argument('--num_threads', default=4, type=int, help='# 用于加载数据的线程数量')
-        parser.add_argument('--batch_size', type=int, default=4, help='输入的批量大小')
+        parser.add_argument('--batch_size', type=int, default=32, help='输入的批量大小') # 在AI主机上训练设置的参数
         parser.add_argument('--load_size', type=int, default=256, help='将图像缩放到此大小')
         parser.add_argument('--crop_size', type=int, default=256, help='然后裁剪到这个大小')
         parser.add_argument('--max_dataset_size', type=int, default=float("inf"),
