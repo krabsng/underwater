@@ -660,6 +660,7 @@ class KrabsModel(BaseModel):
     def forward(self):
 
         # 检查模型的第一个参数在哪个设备上
+        print(self.opt.gpu_ids)
         print(next(self.netKrabs.parameters()).device)
         print(self.Origin_Img.device)
         for param in self.netKrabs.parameters():
