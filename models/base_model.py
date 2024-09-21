@@ -154,7 +154,12 @@ class BaseModel(ABC):
                 net = getattr(self, 'net' + name)
 
                 if len(self.gpu_ids) > 0 and torch.cuda.is_available():
-                    torch.save(net.module.cpu().state_dict(), save_path)
+                    if isinstance(net, torch.nn.DataParallel):
+                        # 如果是 DataParallel，使用 .module 访问实际模型
+                        torch.save(net.module.cpu().state_dict(), save_path)
+                    else:
+                        # 如果不是 DataParallel，直接保存模型
+                        torch.save(net.cpu().state_dict(), save_path)
                     net.cuda(self.gpu_ids[0])
                 else:
                     torch.save(net.cpu().state_dict(), save_path)
