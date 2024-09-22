@@ -51,7 +51,7 @@ class BaseOptions():
         parser.add_argument('--direction', type=str, default='AtoB', help='AtoB 或 BtoA')
         parser.add_argument('--serial_batches', action='store_true',
                             help='如果为 true，则拍摄图像以进行批量处理，否则随机拍摄图像')
-        parser.add_argument('--num_threads', default=8, type=int, help='# 用于加载数据的线程数量') # 更改为0
+        parser.add_argument('--num_threads', default=0, type=int, help='# 用于加载数据的线程数量') # 更改为0
         parser.add_argument('--batch_size', type=int, default=8, help='输入的批量大小') # 在AI主机上训练设置的参数
         parser.add_argument('--load_size', type=int, default=256, help='将图像缩放到此大小')
         parser.add_argument('--crop_size', type=int, default=256, help='然后裁剪到这个大小')
