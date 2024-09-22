@@ -74,20 +74,23 @@ class CustomDatasetDataLoader():
         print("dataset [%s] was created" % type(self.dataset).__name__)
 
         utils.init_distributed_mode(opt)
-
         if opt.distributed:
             sampler = DistributedSampler(self.dataset)
+            self.dataloader = torch.utils.data.DataLoader(
+                self.dataset,
+                batch_size=opt.batch_size,
+                shuffle=False,
+                num_workers=int(opt.num_threads),
+                sampler=sampler,  # 多GPU训练添加的
+                pin_memory=True  # 多GPU训练添加的
+            )
         else:
-            sampler = None
-
-        self.dataloader = torch.utils.data.DataLoader(
-            self.dataset,
-            batch_size=opt.batch_size,
-            shuffle=not opt.serial_batches,
-            num_workers=int(opt.num_threads),
-            sampler=sampler, # 多GPU训练添加的
-            pin_memory=True  # 多GPU训练添加的
-        )
+            self.dataloader = torch.utils.data.DataLoader(
+                self.dataset,
+                batch_size=opt.batch_size,
+                shuffle=not opt.serial_batches,
+                num_workers=int(opt.num_threads)
+            )
 
     def load_data(self):
         return self
