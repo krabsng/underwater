@@ -9,7 +9,6 @@ from loss.network_loss import LossNetwork
 from models.base_model import BaseModel
 from loss.totalvariation_loss import TotalVariationLoss
 
-
 def to_3d(x):
     return rearrange(x, 'b c h w -> b (h w) c')
 
