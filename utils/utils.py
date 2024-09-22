@@ -11,6 +11,7 @@ import math
 from IQA_pytorch import SSIM, MS_SSIM
 import matplotlib.pyplot as plt
 import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 EPS = 1e-3
 PI = 22.0 / 7.0
@@ -184,6 +185,26 @@ class L_color(nn.Module):
         k = torch.pow(torch.pow(Drg, 2) + torch.pow(Drb, 2) + torch.pow(Dgb, 2), 0.5)
 
         return k
+
+
+def init_distributed_mode(opt):
+    """
+        该函数用来初始化分布式环境
+    """
+    if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
+        opt.rank = int(os.environ['RANK'])
+        opt.world_size = int(os.environ['WORLD_SIZE'])
+        opt.gpu = int(os.environ['LOCAL_RANK'])
+    else:
+        print('Not using distributed mode')
+        opt.distributed = False
+        return
+
+    opt.distributed = True
+
+    torch.cuda.set_device(opt.gpu)
+    dist.init_process_group(backend='nccl', init_method='env://')
+    dist.barrier()
 
 # def loadnet(load_path,device,net):
 #     """

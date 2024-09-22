@@ -13,8 +13,8 @@ See our template dataset class 'template_dataset.py' for more details.
 import importlib
 import torch.utils.data
 from data.base_dataset import BaseDataset
-
-
+from torch.utils.data import DistributedSampler
+from  utils import utils
 def find_dataset_using_name(dataset_name):
     """Import the module "data/[dataset_name]_dataset.py".
 
@@ -72,11 +72,22 @@ class CustomDatasetDataLoader():
         dataset_class = find_dataset_using_name(opt.dataset_mode)
         self.dataset = dataset_class(opt)
         print("dataset [%s] was created" % type(self.dataset).__name__)
+
+        utils.init_distributed_mode(opt)
+
+        if opt.distributed:
+            sampler = DistributedSampler(self.dataset)
+        else:
+            sampler = None
+
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=opt.batch_size,
             shuffle=not opt.serial_batches,
-            num_workers=int(opt.num_threads))
+            num_workers=int(opt.num_threads),
+            sampler=sampler, # 多GPU训练添加的
+            pin_memory=True  # 多GPU训练添加的
+        )
 
     def load_data(self):
         return self

@@ -8,6 +8,8 @@ from torchvision.models import vgg16
 from loss.network_loss import LossNetwork
 from models.base_model import BaseModel
 from loss.totalvariation_loss import TotalVariationLoss
+from torch.nn.parallel import DistributedDataParallel as DDP
+from utils import utils
 
 def to_3d(x):
     return rearrange(x, 'b c h w -> b (h w) c')
@@ -617,8 +619,14 @@ class KrabsModel(BaseModel):
         self.loss_names = ['M']
 
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=self.SR), opt.gpu_ids)
-        self.netKrabs = self.netKrabs.to(self.device)
+        self.netKrabs = KrabsNet(SR=self.SR).to(self.device)
+        if opt.distributed:
+            self.netKrabs = DDP(self.netKrabs, device_ids=[opt.gpu])
+        else:
+            self.netKrabs = torch.nn.DataParallel(self.netKrabs, opt.gpu_ids).to(self.device)
+
+        # self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=self.SR), opt.gpu_ids)
+        # self.netKrabs = self.netKrabs.to(self.device)
 
         # 指定要保存的图像，训练/测试脚本将调用 <BaseModel.get_current_visuals>
         if self.isTrain is None:
