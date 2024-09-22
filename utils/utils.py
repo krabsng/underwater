@@ -187,10 +187,31 @@ class L_color(nn.Module):
         return k
 
 
+# def init_distributed_mode(opt):
+#     """
+#         该函数用来初始化分布式环境
+#     """
+#     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
+#         opt.rank = int(os.environ['RANK'])
+#         opt.world_size = int(os.environ['WORLD_SIZE'])
+#         opt.gpu = int(os.environ['LOCAL_RANK'])
+#     else:
+#         print('Not using distributed mode')
+#         opt.distributed = False
+#         return
+#
+#     opt.distributed = True
+#
+#     torch.cuda.set_device(opt.gpu)
+#     dist.init_process_group(backend='nccl', init_method='env://')
+#     dist.barrier()
+
+
 def init_distributed_mode(opt):
     """
-        该函数用来初始化分布式环境
+    初始化分布式训练环境
     """
+    # 检查环境变量 RANK 和 WORLD_SIZE，以确定是否启用了分布式
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         opt.rank = int(os.environ['RANK'])
         opt.world_size = int(os.environ['WORLD_SIZE'])
@@ -202,9 +223,27 @@ def init_distributed_mode(opt):
 
     opt.distributed = True
 
+    # 检查 CUDA 是否可用
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA is not available, but distributed training requires CUDA.")
+
     torch.cuda.set_device(opt.gpu)
-    dist.init_process_group(backend='nccl', init_method='env://')
+
+    # 初始化分布式训练进程组
+    try:
+        dist.init_process_group(backend='nccl', init_method='env://')
+        print(f"Distributed mode initialized: rank {opt.rank}, world_size {opt.world_size}, using GPU {opt.gpu}")
+    except Exception as e:
+        print(f"Failed to initialize distributed mode: {e}")
+        opt.distributed = False
+        return
+
+    # 添加 barrier 以确保所有进程同步
     dist.barrier()
+
+    # 可选：打印一些调试信息
+    print(f"Process {opt.rank} is ready for distributed training on GPU {opt.gpu}.")
+
 
 # def loadnet(load_path,device,net):
 #     """
