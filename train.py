@@ -27,7 +27,8 @@ from utils import utils
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # 获取训练选项
-    utils.init_distributed_mode(opt)
+    # 使用分布式训练
+    # utils.init_distributed_mode(opt)
     dataset = create_dataset(opt)  # 创建给定opt.dataset_mode和其他选项的数据集
     dataset_size = len(dataset)    # 获取数据集中的图像数。
     print('训练集图像的数量 = %d' % dataset_size)
