@@ -73,7 +73,6 @@ class CustomDatasetDataLoader():
         self.dataset = dataset_class(opt)
         print("dataset [%s] was created" % type(self.dataset).__name__)
 
-        utils.init_distributed_mode(opt)
         if opt.distributed:
             sampler = DistributedSampler(self.dataset)
             self.dataloader = torch.utils.data.DataLoader(
