@@ -27,6 +27,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--epoch_count', type=int, default=1, help='起始纪元计数，我们按以下方式保存模型 <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
         parser.add_argument('--phase', type=str, default='train', help='train, val, test, etc')
         # 训练参数
+        parser.add_argument('--distributed', type=str, default=False, help='是否使用分布式训练')
         parser.add_argument('--pretrain_dir', type=str, default=None)
         parser.add_argument('--weight_decay', type=float, default=0.0005)
         parser.add_argument('--n_epochs', type=int, default=100, help='具有初始学习率的 epoch 数')
