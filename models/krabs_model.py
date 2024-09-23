@@ -614,7 +614,7 @@ class KrabsModel(BaseModel):
         super(KrabsModel, self).__init__(opt)
         self.opt = opt
         # 是否要进行超分辨率增强
-        self.SR = True
+        self.SR = False
         # 损失的名称
         self.loss_names = ['M']
 
