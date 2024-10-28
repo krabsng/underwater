@@ -557,7 +557,7 @@ class KrabsNet(nn.Module):
 
         # (512, 16, 16) -> (256, 32, 32)
         d_u4 = self.up4(e_d4)
-        rc4 = self.reduce_c4(torch.cat([d_u4, e4], dim=1))
+        rc4 = self.reduce_c4(torch.cat([d_u4, e4], dim=1)) # ↓
         d4 = self.decoder4(rc4)
         if self.Prompt:
             prompt3 = self.prompt3(d4)

@@ -1,108 +1,71 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import DataLoader, DistributedSampler
-from torchvision import datasets, transforms
+import torch.nn.functional as F
+# import torch.optim as optim
+# import torch.distributed as dist
+# import torch.multiprocessing as mp
+# from torch.nn.parallel import DistributedDataParallel as DDP
+# from torch.utils.data import DataLoader, DistributedSampler
+# from torchvision import datasets, transforms
+from einops import rearrange
+from models.spu_model import DualPathDownsampling,DualPathUpsampling
 
+##########################################################################
+## Multi-DConv Head Transposed Self-Attention (MDTA)
+class Attention(nn.Module):
+    def __init__(self, dim, num_heads, bias):
+        super(Attention, self).__init__()
+        self.num_heads = num_heads
+        self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1))
 
-def setup(rank, world_size):
-    """
-    初始化进程组
-    """
-    dist.init_process_group(
-        backend='nccl',  # 推荐使用 NCCL 后端
-        init_method='env://',  # 使用环境变量进行初始化
-        world_size=world_size,
-        rank=rank
-    )
-    torch.manual_seed(0)
+        self.qkv = nn.Conv2d(dim, dim * 3, kernel_size=1, bias=bias)
+        self.qkv_dwconv = nn.Conv2d(dim * 3, dim * 3, kernel_size=3, stride=1, padding=1, groups=dim * 3, bias=bias)
+        self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
 
+    def forward(self, x):
+        b, c, h, w = x.shape
 
-def cleanup():
-    """
-    销毁进程组
-    """
-    dist.destroy_process_group()
+        qkv = self.qkv_dwconv(self.qkv(x))
+        q, k, v = qkv.chunk(3, dim=1)
 
+        q = rearrange(q, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+        k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+        v = rearrange(v, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
 
-def train(rank, world_size):
-    """
-    每个进程的训练过程
-    """
-    setup(rank, world_size)
+        q = torch.nn.functional.normalize(q, dim=-1)
+        k = torch.nn.functional.normalize(k, dim=-1)
 
-    # 设置当前进程的 GPU
-    torch.cuda.set_device(rank)
-    device = torch.device(f'cuda:{rank}')
+        attn = (q @ k.transpose(-2, -1)) * self.temperature
+        attn = attn.softmax(dim=-1)
 
-    # 数据预处理和加载
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
+        out = (attn @ v)
 
-    dataset = datasets.MNIST(
-        root='./data',
-        train=True,
-        download=True,
-        transform=transform
-    )
+        out = rearrange(out, 'b head c (h w) -> b (head c) h w', head=self.num_heads, h=h, w=w)
 
-    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=True)
-    dataloader = DataLoader(dataset, batch_size=64, sampler=sampler)
+        out = self.project_out(out)
+        return out
 
-    # 定义模型并移动到对应 GPU
-    model = nn.Sequential(
-        nn.Flatten(),
-        nn.Linear(28 * 28, 512),
-        nn.ReLU(),
-        nn.Linear(512, 10)
-    ).to(device)
+class FeedForward(nn.Module):
+    def __init__(self, dim, ffn_expansion_factor, bias):
+        super(FeedForward, self).__init__()
 
-    # 包装模型
-    ddp_model = DDP(model, device_ids=[rank])
+        hidden_features = int(dim * ffn_expansion_factor)
 
-    # 定义损失函数和优化器
-    criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = optim.SGD(ddp_model.parameters(), lr=0.01)
+        self.project_in = nn.Conv2d(dim, hidden_features * 2, kernel_size=1, bias=bias)
 
-    # 训练循环
-    for epoch in range(5):
-        sampler.set_epoch(epoch)  # 设置种子以确保每个 epoch 的数据打乱方式不同
-        ddp_model.train()
-        running_loss = 0.0
-        for batch_idx, (inputs, targets) in enumerate(dataloader):
-            inputs = inputs.to(device)
-            targets = targets.to(device)
+        self.dwconv = nn.Conv2d(hidden_features * 2, hidden_features * 2, kernel_size=3, stride=1, padding=1,
+                                groups=hidden_features * 2, bias=bias)
 
-            optimizer.zero_grad()
-            outputs = ddp_model(inputs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
+        self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
-            running_loss += loss.item()
-            if batch_idx % 100 == 99:
-                print(f'Rank {rank}, Epoch {epoch + 1}, Batch {batch_idx + 1}, Loss: {running_loss / 100:.4f}')
-                running_loss = 0.0
-
-    cleanup()
-
-
-def main():
-    world_size = torch.cuda.device_count()
-    if world_size < 1:
-        raise ValueError("需要至少一个 GPU 来运行")
-    mp.spawn(
-        train,
-        args=(world_size,),
-        nprocs=world_size,
-        join=True
-    )
-
-
+    def forward(self, x):
+        x = self.project_in(x)
+        x1, x2 = self.dwconv(x).chunk(2, dim=1)
+        x = F.gelu(x1) * x2
+        x = self.project_out(x)
+        return x
 if __name__ == '__main__':
-    main()
+    net = DualPathDownsampling(6,2,4)
+    Feature_in = torch.randn(1, 6, 256, 256)
+    Feature_out = net(Feature_in)
+    print(Feature_out.shape)
