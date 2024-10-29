@@ -178,6 +178,7 @@ class WindowAttention(nn.Module):
 
 class DualPathUpsampling(nn.Module):
     def __init__(self,in_c, out_c,num_heads, window_size):
+        super().__init__()
         self.conv3 = nn.Conv2d(in_c, in_c * 2, kernel_size=3, stride=1, padding=1, bias=True)
         self.path1 = TransformerBlock(dim=in_c * 2,num_heads=num_heads,ffn_expansion_factor=2,bias=True,LayerNorm_type='BiasFree')
         self.path2 = SwinTransformerBlock(dim=in_c * 2,num_heads=num_heads,window_size=window_size)
@@ -192,6 +193,7 @@ class DualPathUpsampling(nn.Module):
 
 class DualPathDownsampling(nn.Module):
     def __init__(self,in_c,num_heads, window_size):
+        super().__init__()
         self.conv3 = nn.Conv2d(in_c, in_c // 2, kernel_size=3, stride=1, padding=1, bias=False)
         self.path1 = TransformerBlock(dim=in_c // 2, num_heads=num_heads, ffn_expansion_factor=2, bias=True,
                                       LayerNorm_type='BiasFree')
