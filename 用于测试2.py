@@ -65,7 +65,7 @@ class FeedForward(nn.Module):
         x = self.project_out(x)
         return x
 if __name__ == '__main__':
-    from evaluation import PSNR
-    psnr = PSNR()
-
-
+    net = DualPathDownsampling(6,2,4)
+    Feature_in = torch.randn(1, 6, 256, 256)
+    Feature_out = net(Feature_in)
+    print(Feature_out.shape)
