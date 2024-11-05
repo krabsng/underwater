@@ -92,8 +92,7 @@ def split_images_by_keywords(folder_path, keyword1, keyword2):
 
 if __name__ == "__main__":
     # 图片路径列表
-    image_list1,_ = split_images_by_keywords('D:\\UnderwaterDataset\\EUVP\\eval_data\\euvp_test\\ugan','test_p','test')  # 原图列表
-    image_list2,_ = split_images_by_keywords('D:\\UnderwaterDataset\\EUVP\\eval_data\\euvp_test\\ugan-p','test_p','test')  # 重建/预测图列表
+    image_list1,image_list2 = split_images_by_keywords('/a.krabs/krabs/checkpoints/krabs_net/web/images','Generate','GT')  # 原图列表
 
     avg_psnr, avg_ssim, avg_uiqm, avg_uciqe = calculate_average_metrics(image_list1, image_list2)
 
