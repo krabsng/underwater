@@ -28,14 +28,5 @@ class PSNR(nn.Module):
 
         return 10 * torch.log10((1.0 / mse))
 
-def getPSNR():
-    """给外部调用用来获取PSNR的实例
-        Parameters:
-            无参数
-        returns:
-            返回一个PSNR的实例
-    """
-    # 创建一个psnr对象
-    return PSNR()
 
 
