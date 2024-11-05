@@ -22,7 +22,7 @@ class TrainOptions(BaseOptions):
         # 网络保存和加载参数f
         parser.add_argument('--save_latest_freq', type=int, default=5000, help='保存最新结果的频率')
         parser.add_argument('--save_epoch_freq', type=int, default=5, help='在epochs结束时保存检查点的频率')
-        parser.add_argument('--save_by_iter', acftion='store_true', help='是否通过迭代保存模型')
+        parser.add_argument('--save_by_iter', action='store_true', help='是否通过迭代保存模型')
         parser.add_argument('--continue_train', action='store_true', help='继续训练：加载最新模型')
         parser.add_argument('--epoch_count', type=int, default=1, help='起始纪元计数，我们按以下方式保存模型 <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
         parser.add_argument('--phase', type=str, default='train', help='train, val, test, etc')
