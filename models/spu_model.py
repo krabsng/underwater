@@ -178,7 +178,7 @@ class WindowAttention(nn.Module):
         return x
 
 class DualPathUpsampling(nn.Module):
-    def __init__(self,in_c, out_c,num_heads, window_size):
+    def __init__(self,in_c, num_heads, window_size):
         super().__init__()
         self.conv3 = nn.Conv2d(in_c, in_c * 2, kernel_size=3, stride=1, padding=1, bias=True)
         self.path1 = TransformerBlock(dim=in_c * 2,num_heads=num_heads,ffn_expansion_factor=2,bias=True,LayerNorm_type='BiasFree')
@@ -491,7 +491,7 @@ class SPUNet(nn.Module):
     """
 
     def __init__(self, in_dim=3, mid_dim=64, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[8, 4, 2, 1],
-                 win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
+                 win_sizes=[16, 8, 4, 2], Prompt=True, SR=True):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
