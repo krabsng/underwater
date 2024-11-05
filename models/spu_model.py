@@ -688,7 +688,7 @@ class SPUModel(BaseModel):
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
         self.TotalVariation_loss = TotalVariationLoss()
         self.network_loss.eval()  # 不计算梯度
-        self.model_names = ['Krabs']
+        self.model_names = ['SPU']
         # 保存模型
         if self.isTrain:
             # 定义优化器,调整学习率的scheduler由basemodel里的函数创建
