@@ -651,14 +651,14 @@ class SPUNet(nn.Module):
         # ----------------修改--结束----------------------- #
 
 
-class KrabsModel(BaseModel):
+class SPUModel(BaseModel):
     """
         此类使用了自定义的Krabs模型，用于在配对数据的情况下学习图像到图像的转换。
        模型训练需要“ --dataset_mode unaligned”数据集。
        """
 
     def __init__(self, opt):
-        super(KrabsModel, self).__init__(opt)
+        super(SPUModel, self).__init__(opt)
         self.opt = opt
         # 是否要进行超分辨率增强
         self.SR = False
