@@ -8,6 +8,7 @@ from torchvision.models import vgg16
 from loss.network_loss import LossNetwork
 from models.base_model import BaseModel
 from loss.totalvariation_loss import TotalVariationLoss
+from loss.ssim_loss import SSIM
 from torch.nn.parallel import DistributedDataParallel as DDP
 from utils import utils
 
@@ -490,7 +491,7 @@ class SPUNet(nn.Module):
     """
 
     def __init__(self, in_dim=3, mid_dim=64, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[8, 4, 2, 1],
-                 win_sizes=[16, 8, 4, 2], SR_num=2, LR_num=2, Prompt=False, SR=False):
+                 win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
@@ -551,17 +552,8 @@ class SPUNet(nn.Module):
         )
         self.reduce_c1 = nn.Conv2d(int(mid_dim * 2 ** 1), int(mid_dim * 2 ** 0), kernel_size=1, bias=True)
 
-        # SRTransformer
-        self.SRTransformer = nn.Sequential(
-            *[SwinTransformerBlock(dim=int(mid_dim * 2 ** -1), num_heads=4, window_size=4)
-              for i in range(SR_num)]
-        )
-        self.LRTransformer = nn.Sequential(
-            *[SwinTransformerBlock(dim=int(mid_dim * 2 ** 0), num_heads=4, window_size=4)
-              for i in range(LR_num)]
-        )
-        self.up_sr = Upsample(int(mid_dim * 2 ** 0))
-        self.dw_lr = Downsample(int(mid_dim * 2 ** -1))
+        self.up_sr = DualPathUpsampling(int(mid_dim * 2 ** 0),2,4)
+        self.dw_lr = DualPathDownsampling(int(mid_dim * 2 ** -1),2,4)
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
         if self.Prompt:
@@ -641,11 +633,9 @@ class SPUNet(nn.Module):
         # ----------------修改--开始----------------------- #
         # (32, 256, 256) -> (16, 512, 512)
         sr = self.up_sr(out)
-        sr = self.SRTransformer(sr)
         if not self.SR:
             # (16, 512, 512) -> (32, 256, 256)
             lr = self.dw_lr(sr)
-            lr = self.LRTransformer(lr)
             return self.lr_p(lr)
         return self.sr_p(sr)
         # ----------------修改--结束----------------------- #
@@ -666,11 +656,11 @@ class SPUModel(BaseModel):
         self.loss_names = ['M']
 
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netKrabs = SPUNet(SR=self.SR).to(self.device)
+        self.netSPU = SPUNet(SR=self.SR).to(self.device)
         if opt.distributed:
-            self.netKrabs = DDP(self.netKrabs, device_ids=[opt.gpu])
+            self.netSPU = DDP(self.netSPU, device_ids=[opt.gpu])
         else:
-            self.netKrabs = torch.nn.DataParallel(self.netKrabs, opt.gpu_ids).to(self.device)
+            self.netSPU = torch.nn.DataParallel(self.netSPU, opt.gpu_ids).to(self.device)
 
         # self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=self.SR), opt.gpu_ids)
         # self.netKrabs = self.netKrabs.to(self.device)
@@ -682,11 +672,11 @@ class SPUModel(BaseModel):
             self.visual_names = ['Origin_Img', 'Generate_Img', 'GT_Img']
         if not self.SR:
             # 加载网络的预训权重
-            if isinstance(self.netKrabs, torch.nn.DataParallel):
-                self.netKrabs.module.load_state_dict(
+            if isinstance(self.netSPU, torch.nn.DataParallel):
+                self.netSPU.module.load_state_dict(
                     torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
             else:
-                self.netKrabs.load_state_dict(
+                self.netSPU.load_state_dict(
                     torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
 
         # 定义要用到的损失
@@ -694,15 +684,15 @@ class SPUModel(BaseModel):
         vgg_model= vgg_model.to(self.device)
 
         self.L1_loss = nn.L1Loss()  # 定义L1损失
-        #self.L1_smooth_loss = F.smooth_l1_loss  # 定义L1smooth损失
+        self.ssim_loss = SSIM()  # 定义L1smooth损失
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
-        #self.TotalVariation_loss = TotalVariationLoss()
+        self.TotalVariation_loss = TotalVariationLoss()
         self.network_loss.eval()  # 不计算梯度
         self.model_names = ['Krabs']
         # 保存模型
         if self.isTrain:
             # 定义优化器,调整学习率的scheduler由basemodel里的函数创建
-            self.optimizer = torch.optim.Adam(self.netKrabs.parameters(), opt.lr, weight_decay=opt.weight_decay)
+            self.optimizer = torch.optim.Adam(self.netSPU.parameters(), opt.lr, weight_decay=opt.weight_decay)
             self.optimizers.append(self.optimizer)
 
     def set_input(self, input):
@@ -728,7 +718,7 @@ class SPUModel(BaseModel):
         # for param in self.netKrabs.parameters():
         #     print(param.device)
 
-        self.Generate_Img = self.netKrabs(self.Origin_Img)
+        self.Generate_Img = self.netSPU(self.Origin_Img)
 
     def backward(self):
         # 损失函数初始权重比：1:0.04 -> 1:0.1
@@ -736,12 +726,12 @@ class SPUModel(BaseModel):
         lambda_B = self.opt.lambda_B
         lambda_C = self.opt.lambda_C
         lambda_D = self.opt.lambda_D
-        # self.loss_M = lambda_A * self.L1_smooth_loss(self.Generate_Img, self.GT_Img) + \
-        #               lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
-        #               lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
-        #               lambda_D * self.TotalVariation_loss(self.Generate_Img)
-        self.loss_M = lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img)
+        self.loss_M = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
+                      lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
+                      lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
+                      lambda_D * self.TotalVariation_loss(self.Generate_Img)
+        # self.loss_M = lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
+        #               lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img)
         self.loss_M.backward()
 
     def optimize_parameters(self):
@@ -767,8 +757,8 @@ class SPUModel(BaseModel):
         """
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
-            parser.add_argument('--lambda_A', type=float, default=100.0, help='')
-            parser.add_argument('--lambda_B', type=float, default=80.0, help='')
-            parser.add_argument('--lambda_C', type=float, default=20.0, help='')
-            parser.add_argument('--lambda_D', type=float, default=10.0, help='')
+            parser.add_argument('--lambda_A', type=float, default=0.1, help='')
+            parser.add_argument('--lambda_B', type=float, default=0.2, help='')
+            parser.add_argument('--lambda_C', type=float, default=0.6, help='')
+            parser.add_argument('--lambda_D', type=float, default=0.1, help='')
         return parser
