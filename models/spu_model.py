@@ -491,7 +491,7 @@ class SPUNet(nn.Module):
     """
 
     def __init__(self, in_dim=3, mid_dim=64, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[8, 4, 2, 1],
-                 win_sizes=[16, 8, 4, 2], Prompt=True, SR=True):
+                 win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
@@ -650,13 +650,11 @@ class SPUModel(BaseModel):
     def __init__(self, opt):
         super(SPUModel, self).__init__(opt)
         self.opt = opt
-        # 是否要进行超分辨率增强
-        self.SR = False
         # 损失的名称
         self.loss_names = ['M']
 
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netSPU = SPUNet(SR=self.SR).to(self.device)
+        self.netSPU = SPUNet(SR=True,Prompt=True).to(self.device)
         if opt.distributed:
             self.netSPU = DDP(self.netSPU, device_ids=[opt.gpu])
         else:
