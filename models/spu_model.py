@@ -565,17 +565,17 @@ class SPUNet(nn.Module):
             """
             self.prompt3 = PromptGenBlock(prompt_dim=int(mid_dim * 2 ** 3), prompt_len=5, prompt_size=16,
                                           lin_dim=int(mid_dim * 2 ** 3))
-            self.noise3 = SwinTransformerBlock(dim=int(mid_dim * 2 ** 4), num_heads=4, window_size=4)
+            self.noise3 = SwinTransformerBlock(dim=int(mid_dim * 2 ** 4), num_heads=4, window_size=2)
             self.reduce_noise3 = nn.Conv2d(int(mid_dim * 2 ** 4), int(mid_dim * 2 ** 3), kernel_size=1, bias=True)
 
             self.prompt2 = PromptGenBlock(prompt_dim=int(mid_dim * 2 ** 2), prompt_len=5, prompt_size=32,
                                           lin_dim=int(mid_dim * 2 ** 2))
-            self.noise2 = SwinTransformerBlock(dim=int(mid_dim * 2 ** 3), num_heads=4, window_size=4)
+            self.noise2 = SwinTransformerBlock(dim=int(mid_dim * 2 ** 3), num_heads=4, window_size=2)
             self.reduce_noise2 = nn.Conv2d(int(mid_dim * 2 ** 3), int(mid_dim * 2 ** 2), kernel_size=1, bias=True)
 
             self.prompt1 = PromptGenBlock(prompt_dim=int(mid_dim * 2 ** 1), prompt_len=5, prompt_size=32,
                                           lin_dim=int(mid_dim * 2 ** 1))
-            self.noise1 = SwinTransformerBlock(dim=int(mid_dim * 2 ** 2), num_heads=4, window_size=4)
+            self.noise1 = SwinTransformerBlock(dim=int(mid_dim * 2 ** 2), num_heads=4, window_size=2)
             self.reduce_noise1 = nn.Conv2d(int(mid_dim * 2 ** 2), int(mid_dim * 2 **1), kernel_size=1, bias=True)
 
     def forward(self, x):
