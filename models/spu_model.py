@@ -579,6 +579,7 @@ class SPUNet(nn.Module):
             self.reduce_noise1 = nn.Conv2d(int(mid_dim * 2 ** 2), int(mid_dim * 2 **1), kernel_size=1, bias=True)
 
     def forward(self, x):
+        print(x.shape)
         # (3, 256, 256) -> (32, 256, 256)
         x = self.pro1(x)
         e1 = self.encoder1(x)
