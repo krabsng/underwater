@@ -579,7 +579,6 @@ class SPUNet(nn.Module):
             self.reduce_noise1 = nn.Conv2d(int(mid_dim * 2 ** 2), int(mid_dim * 2 **1), kernel_size=1, bias=True)
 
     def forward(self, x):
-        print(x.shape)
         # (3, 256, 256) -> (32, 256, 256)
         x = self.pro1(x)
         e1 = self.encoder1(x)
@@ -599,12 +598,9 @@ class SPUNet(nn.Module):
         d_u4 = self.up4(e_d4)
         rc4 = self.reduce_c4(torch.cat([d_u4, e4], dim=1)) # ↓
         d4 = self.decoder4(rc4)
-        print(d4.shape)
         if self.Prompt:
             prompt3 = self.prompt3(d4)
-            print(d4.shape)
             prompt3 = torch.cat([d4, prompt3], dim=1)
-            print(prompt3.shape)
             prompt3 = self.noise3(prompt3)
             d4 = self.reduce_noise3(prompt3)
 
