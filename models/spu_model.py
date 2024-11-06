@@ -599,10 +599,10 @@ class SPUNet(nn.Module):
         d_u4 = self.up4(e_d4)
         rc4 = self.reduce_c4(torch.cat([d_u4, e4], dim=1)) # ↓
         d4 = self.decoder4(rc4)
-        print(d4)
+        print(d4.shape)
         if self.Prompt:
             prompt3 = self.prompt3(d4)
-            print(d4)
+            print(d4.shape)
             prompt3 = torch.cat([d4, prompt3], dim=1)
             print(prompt3.shape)
             prompt3 = self.noise3(prompt3)
