@@ -653,10 +653,9 @@ class SPUModel(BaseModel):
         super(SPUModel, self).__init__(opt)
         self.opt = opt
         self.SR = True
-        self.Prompt = True
+        self.Prompt = False
         # 损失的名称
         self.loss_names = ['M']
-
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
         self.netSPU = SPUNet(SR=self.SR,Prompt=self.Prompt).to(self.device)
         if opt.distributed:
