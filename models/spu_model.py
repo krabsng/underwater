@@ -757,8 +757,8 @@ class SPUModel(BaseModel):
         """
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
-            parser.add_argument('--lambda_A', type=float, default=0.1, help='')
-            parser.add_argument('--lambda_B', type=float, default=0.2, help='')
-            parser.add_argument('--lambda_C', type=float, default=0.6, help='')
-            parser.add_argument('--lambda_D', type=float, default=0.1, help='')
+            parser.add_argument('--lambda_A', type=float, default=0, help='')
+            parser.add_argument('--lambda_B', type=float, default=0, help='')
+            parser.add_argument('--lambda_C', type=float, default=1, help='')
+            parser.add_argument('--lambda_D', type=float, default=0, help='')
         return parser

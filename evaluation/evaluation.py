@@ -93,6 +93,8 @@ def split_images_by_keywords(folder_path, keyword1, keyword2):
 if __name__ == "__main__":
     # 图片路径列表
     image_list1,image_list2 = split_images_by_keywords('/a.krabs/krabs/results/iat/test_latest','Generate','GT')  # 原图列表
+    image_list1.sort()
+    image_list2.sort()
     avg_psnr, avg_ssim, avg_uiqm, avg_uciqe = calculate_average_metrics(image_list1, image_list2)
 
     print(f"Average PSNR: {avg_psnr:.4f}")
