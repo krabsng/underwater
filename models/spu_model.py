@@ -552,8 +552,8 @@ class SPUNet(nn.Module):
         )
         self.reduce_c1 = nn.Conv2d(int(mid_dim * 2 ** 1), int(mid_dim * 2 ** 0), kernel_size=1, bias=True)
 
-        self.up_sr = DualPathUpsampling(int(mid_dim * 2 ** 0),2,4)
-        self.dw_lr = DualPathDownsampling(int(mid_dim * 2 ** -1),2,4)
+        self.up_sr = nn.Sequential(*[DualPathUpsampling(int(mid_dim * 2 ** 0),2,4)])
+        self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),2,4)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
         if self.Prompt:
@@ -757,8 +757,8 @@ class SPUModel(BaseModel):
         """
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
-            parser.add_argument('--lambda_A', type=float, default=0, help='')
-            parser.add_argument('--lambda_B', type=float, default=0, help='')
-            parser.add_argument('--lambda_C', type=float, default=1, help='')
-            parser.add_argument('--lambda_D', type=float, default=0, help='')
+            parser.add_argument('--lambda_A', type=float, default=0.1, help='')
+            parser.add_argument('--lambda_B', type=float, default=0.3, help='')
+            parser.add_argument('--lambda_C', type=float, default=0.5, help='')
+            parser.add_argument('--lambda_D', type=float, default=0.1, help='')
         return parser
