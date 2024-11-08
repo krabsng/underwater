@@ -554,7 +554,7 @@ class SPUNet(nn.Module):
 
         self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0),2,4)] +
                                      [SwinTransformerBlock(dim=int(mid_dim), num_heads=2, window_size=2)
-                                     for i in range(0)]))
+                                     for i in range(2)]))
         self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),2,4)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
