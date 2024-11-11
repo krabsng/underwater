@@ -490,7 +490,7 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=64, out_dim=3, num_blocks=[0, 0, 0, 0], num_heads=[8, 4, 2, 1],
+    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[0, 0, 1, 1], num_heads=[8, 4, 2, 1],
                  win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
@@ -554,7 +554,7 @@ class SPUNet(nn.Module):
 
         self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0),2,4)] +
                                      [SwinTransformerBlock(dim=int(mid_dim // 2), num_heads=2, window_size=2)
-                                     for i in range(4)]))
+                                     for i in range(2)]))
         self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),2,4)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
@@ -653,7 +653,7 @@ class SPUModel(BaseModel):
         super(SPUModel, self).__init__(opt)
         self.opt = opt
         self.SR = True
-        self.Prompt = True
+        self.Prompt = False
         # 损失的名称
         self.loss_names = ['M']
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
@@ -760,7 +760,7 @@ class SPUModel(BaseModel):
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
             parser.add_argument('--lambda_A', type=float, default=0.1, help='')
-            parser.add_argument('--lambda_B', type=float, default=0.3, help='')
+            parser.add_argument('--lambda_B', type=float, default=0.2, help='')
             parser.add_argument('--lambda_C', type=float, default=0.5, help='')
             parser.add_argument('--lambda_D', type=float, default=0.1, help='')
         return parser
