@@ -674,7 +674,7 @@ class VGG19_Discriminator(nn.Module):
     def forward(self, x):
         # 使用VGG19提取特征
         x = self.vgg(x)
-        print(x)
+        print(x.shape())
         # 展平并通过全连接层
         x = self.flatten(x)
         x = self.fc1(x)
