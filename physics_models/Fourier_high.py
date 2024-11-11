@@ -67,7 +67,7 @@ def low_pass_filter_color_image(img: np.ndarray, cutoff: int = 30) -> np.ndarray
 
 if __name__ == "__main__":
     # 打开图片并转换为RGB格式的NumPy数组
-    img = Image.open("/home/ljp/a.krabs/waternet-main/docs/frames-0968-small.jpeg").convert("RGB")
+    img = Image.open("D:\\ProgramFiles\\Python\\underwater\\evaluation\\test_p98__Origin_Img.png").convert("RGB")
     img = np.array(img)
 
     # 应用低通滤波器去噪
