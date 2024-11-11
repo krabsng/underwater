@@ -674,7 +674,7 @@ class VGG19_Discriminator(nn.Module):
     def forward(self, x):
         # 使用VGG19提取特征
         x = self.vgg(x)
-
+        print(x)
         # 展平并通过全连接层
         x = self.flatten(x)
         x = self.fc1(x)
@@ -698,7 +698,7 @@ class SPUGANModel(BaseModel):
         self.SR = True
         self.Prompt = False
         # 损失的名称
-        self.loss_names = ['M']
+        self.loss_names = ["G", "D"]
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
         self.netSPU = SPUNet(SR=self.SR, Prompt=self.Prompt).to(self.device)
         if self.isTrain:
@@ -778,14 +778,14 @@ class SPUGANModel(BaseModel):
         lambda_C = self.opt.lambda_C
         lambda_D = self.opt.lambda_D
         lambda_E = self.opt.lambda_E
-        self.loss_M = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
+        self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
                       lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
 
-        self.loss_M = self.loss_M
-        self.loss_M.backward()
+        self.loss_G = self.loss_G
+        self.loss_G.backward()
 
 
     def backward_D_basic(self, netD, real, fake):
@@ -845,8 +845,8 @@ class SPUGANModel(BaseModel):
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
             parser.add_argument('--lambda_A', type=float, default=0.1, help='')  # SSIM
-            parser.add_argument('--lambda_B', type=float, default=0.4, help='')  # netWork
+            parser.add_argument('--lambda_B', type=float, default=0.2, help='')  # netWork
             parser.add_argument('--lambda_C', type=float, default=0.4, help='')  # L2
             parser.add_argument('--lambda_D', type=float, default=0.1, help='')  # 全变差
-            parser.add_argument('--lambda_E', type=float, default=0.1, help='')  # GAN
+            parser.add_argument('--lambda_E', type=float, default=0.2, help='')  # GAN
         return parser
