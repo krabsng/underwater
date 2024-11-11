@@ -684,7 +684,7 @@ class SPUModel(BaseModel):
         vgg_model = vgg16(pretrained=True).features[:16]  # 定义vgg网络，加载预训练权重，并把它放到gpu上去
         vgg_model= vgg_model.to(self.device)
 
-        self.L1_loss = nn.L1Loss()  # 定义L1损失
+        self.L1_loss = nn.MSELoss()  # 定义L1损失
         self.ssim_loss = SSIM()  # 定义L1smooth损失
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
         self.TotalVariation_loss = TotalVariationLoss()
@@ -760,7 +760,7 @@ class SPUModel(BaseModel):
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
             parser.add_argument('--lambda_A', type=float, default=0.1, help='')
-            parser.add_argument('--lambda_B', type=float, default=0.2, help='')
-            parser.add_argument('--lambda_C', type=float, default=0.5, help='')
+            parser.add_argument('--lambda_B', type=float, default=0.4, help='')
+            parser.add_argument('--lambda_C', type=float, default=0.4, help='')
             parser.add_argument('--lambda_D', type=float, default=0.1, help='')
         return parser
