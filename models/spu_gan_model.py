@@ -732,7 +732,7 @@ class SPUGANModel(BaseModel):
         #region 定义一些要用到的损失函数
         vgg_model = vgg16(pretrained=True).features[:16]  # 定义vgg网络，加载预训练权重，并把它放到gpu上去
         vgg_model = vgg_model.to(self.device)
-        self.L1_loss = nn.MSELoss()  # 定义L1损失
+        self.L1_loss = nn.L1Loss() # 定义L1损失
         self.ssim_loss = SSIM()  # 定义L1smooth损失
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
         self.TotalVariation_loss = TotalVariationLoss()
@@ -843,7 +843,7 @@ class SPUGANModel(BaseModel):
         if is_train:
             parser.add_argument('--lambda_A', type=float, default=0, help='')  # SSIM
             parser.add_argument('--lambda_B', type=float, default=0, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=0, help='')  # L2
+            parser.add_argument('--lambda_C', type=float, default=1, help='')  # L1
             parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
-            parser.add_argument('--lambda_E', type=float, default=1, help='')  # GAN
+            parser.add_argument('--lambda_E', type=float, default=0, help='')  # GAN
         return parser
