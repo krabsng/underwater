@@ -759,7 +759,7 @@ class SPUGANModel(BaseModel):
         if self.isTrain is not None:
             self.GT_Img = input['B'].to(self.device)
         if self.SR:
-            self.Origin_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False).to(self.device) # bilinear 双线性
+            self.Origin_Pro_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False).to(self.device) # bilinear 双线性
         self.image_paths = input['A_paths']
 
     def forward(self):
@@ -774,7 +774,7 @@ class SPUGANModel(BaseModel):
         # for param in self.netKrabs.parameters():
         #     print(param.device)
 
-        self.Generate_Img = self.netSPU(self.Origin_Img)
+        self.Generate_Img = self.netSPU(self.Origin_Pro_Img)
 
     def backward_G(self):
         # 损失函数初始权重比：1:0.04 -> 1:0.1
@@ -784,7 +784,7 @@ class SPUGANModel(BaseModel):
         lambda_D = self.opt.lambda_D
         lambda_E = self.opt.lambda_E
 
-        fake_AB = torch.cat((self.Origin_Img, self.Generate_Img), 1)
+        fake_AB = torch.cat((self.Origin_Pro_Img, self.Generate_Img), 1)
         pred_fake = self.netD(fake_AB)
 
         # self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
@@ -800,12 +800,12 @@ class SPUGANModel(BaseModel):
     def backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
-        fake_AB = torch.cat((self.Origin_Img, self.Generate_Img),
+        fake_AB = torch.cat((self.Origin_Pro_Img, self.Generate_Img),
                             1)  # we use conditional GANs; we need to feed both input and output to the discriminator
         pred_fake = self.netD(fake_AB.detach())
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
-        real_AB = torch.cat((self.Origin_Img, self.GT_Img), 1)
+        real_AB = torch.cat((self.Origin_Pro_Img, self.GT_Img), 1)
         pred_real = self.netD(real_AB)
         self.loss_D_real = self.criterionGAN(pred_real, True)
         # combine loss and calculate gradients
