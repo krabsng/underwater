@@ -783,8 +783,7 @@ class SPUGANModel(BaseModel):
         #               lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
         #               lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
         #               lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
-        self.loss_G = lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
+        self.loss_G = lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
         self.loss_G = self.loss_G
         self.loss_G.backward()
 
@@ -849,5 +848,5 @@ class SPUGANModel(BaseModel):
             parser.add_argument('--lambda_B', type=float, default=0.2, help='')  # netWork
             parser.add_argument('--lambda_C', type=float, default=0.5, help='')  # L2
             parser.add_argument('--lambda_D', type=float, default=0.1, help='')  # 全变差
-            parser.add_argument('--lambda_E', type=float, default=0.5, help='')  # GAN
+            parser.add_argument('--lambda_E', type=float, default=1, help='')  # GAN
         return parser
