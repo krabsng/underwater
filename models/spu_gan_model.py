@@ -708,10 +708,10 @@ class SPUGANModel(BaseModel):
                                           opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
         if opt.distributed:
             self.netSPU = DDP(self.netSPU, device_ids=[opt.gpu])
-            self.netD = DDP(self.netD, device_ids=[opt.gpu])
+            # self.netD = DDP(self.netD, device_ids=[opt.gpu])
         else:
             self.netSPU = torch.nn.DataParallel(self.netSPU, opt.gpu_ids).to(self.device)
-            self.netD = torch.nn.DataParallel(self.netD, opt.gpu_ids).to(self.device)
+            # self.netD = torch.nn.DataParallel(self.netD, opt.gpu_ids).to(self.device)
         # self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=self.SR), opt.gpu_ids)
         # self.netKrabs = self.netKrabs.to(self.device)
 
@@ -785,7 +785,6 @@ class SPUGANModel(BaseModel):
         lambda_E = self.opt.lambda_E
 
         fake_AB = torch.cat((self.Origin_Img, self.Generate_Img), 1)
-        print(fake_AB.device)  # 打印输入数据所在设备
         pred_fake = self.netD(fake_AB)
 
         # self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
