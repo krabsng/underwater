@@ -791,7 +791,7 @@ class SPUGANModel(BaseModel):
                       lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
-                      lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
+                      lambda_E * self.criterionGAN(pred_fake, True)
         self.loss_G = self.loss_G
         self.loss_G.backward()
 
