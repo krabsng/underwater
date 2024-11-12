@@ -704,7 +704,8 @@ class SPUGANModel(BaseModel):
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
         self.netSPU = SPUNet(SR=False, Prompt=self.Prompt).to(self.device)
         if self.isTrain:
-            self.netD = VGG19_Discriminator()
+            self.netD = networks.define_D(6, 64, "pixel",
+                                          opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
         if opt.distributed:
             self.netSPU = DDP(self.netSPU, device_ids=[opt.gpu])
             self.netD = DDP(self.netD, device_ids=[opt.gpu])
