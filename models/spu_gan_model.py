@@ -759,7 +759,7 @@ class SPUGANModel(BaseModel):
         if self.isTrain is not None:
             self.GT_Img = input['B'].to(self.device)
         if self.SR:
-            self.Origin_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False) # bilinear 双线性
+            self.Origin_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False).to(self.device) # bilinear 双线性
         self.image_paths = input['A_paths']
 
     def forward(self):
