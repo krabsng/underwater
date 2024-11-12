@@ -497,8 +497,8 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[0, 0, 1, 1], num_heads=[8, 4, 2, 1],
-                 win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
+    def __init__(self, in_dim=3, mid_dim=16, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[4, 2, 2, 1],
+                 win_sizes=[4, 4, 2, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
@@ -695,8 +695,8 @@ class SPUGANModel(BaseModel):
     def __init__(self, opt):
         super(SPUGANModel, self).__init__(opt)
         self.opt = opt
-        self.SR = True
-        self.Prompt = False
+        self.SR = True  # 是否是进行超分辨率训练
+        self.Prompt = True # 是否使用提示学习
         # 损失的名称
         self.loss_names = ["G", "D"]
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
@@ -783,7 +783,8 @@ class SPUGANModel(BaseModel):
         #               lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
         #               lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
         #               lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
-        self.loss_G = self.criterionGAN(self.netD(self.Generate_Img), True)
+        self.loss_G = lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
+                      lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
         self.loss_G = self.loss_G
         self.loss_G.backward()
 
@@ -846,7 +847,7 @@ class SPUGANModel(BaseModel):
         if is_train:
             parser.add_argument('--lambda_A', type=float, default=0.1, help='')  # SSIM
             parser.add_argument('--lambda_B', type=float, default=0.2, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=0.4, help='')  # L2
+            parser.add_argument('--lambda_C', type=float, default=0.5, help='')  # L2
             parser.add_argument('--lambda_D', type=float, default=0.1, help='')  # 全变差
-            parser.add_argument('--lambda_E', type=float, default=0.2, help='')  # GAN
+            parser.add_argument('--lambda_E', type=float, default=0.5, help='')  # GAN
         return parser
