@@ -735,7 +735,7 @@ class SPUGANModel(BaseModel):
         self.L1_loss = nn.L1Loss() # 定义L1损失
         self.ssim_loss = SSIM()  # 定义L1smooth损失
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
-        self.TotalVariation_loss = TotalVariationLoss()
+        # self.TotalVariation_loss = TotalVariationLoss()
         self.network_loss.eval()  # 不计算梯度
         self.criterionGAN = networks.GANLoss("lsgan").to(self.device)  # 定义GAN损失.
         #endregion
@@ -790,8 +790,8 @@ class SPUGANModel(BaseModel):
         self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
                       lambda_E * self.criterionGAN(pred_fake, True)
+        # lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
         self.loss_G = self.loss_G
         self.loss_G.backward()
 
@@ -841,9 +841,9 @@ class SPUGANModel(BaseModel):
         """
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
-            parser.add_argument('--lambda_A', type=float, default=0, help='')  # SSIM
-            parser.add_argument('--lambda_B', type=float, default=0, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=1, help='')  # L1
+            parser.add_argument('--lambda_A', type=float, default=0.45, help='')  # SSIM
+            parser.add_argument('--lambda_B', type=float, default=0.1, help='')  # netWork
+            parser.add_argument('--lambda_C', type=float, default=0.2, help='')  # L1
             parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
-            parser.add_argument('--lambda_E', type=float, default=0, help='')  # GAN
+            parser.add_argument('--lambda_E', type=float, default=0.25, help='')  # GAN
         return parser
