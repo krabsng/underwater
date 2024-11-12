@@ -33,7 +33,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--n_epochs', type=int, default=15, help='具有初始学习率的 epoch 数')
         parser.add_argument('--n_epochs_decay', type=int, default=15, help='线性衰减学习率为零的 epoch 数')
         parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
-        parser.add_argument('--lr', type=float, default=0.0004, help='initial learning rate for adam')
+        parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')
         parser.add_argument('--gan_mode', type=str, default='lsgan', help='GAN 目标的类型。 [vanilla| lsgan | wgangp]. vanilla GAN损失是原始GAN论文中使用的交叉熵目标。')
         parser.add_argument('--pool_size', type=int, default=50, help='the size of image buffer that stores previously generated images')
         parser.add_argument('--lr_policy', type=str, default='linear', help='学习率策略. [linear | step | plateau | cosine]')
