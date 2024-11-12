@@ -778,12 +778,12 @@ class SPUGANModel(BaseModel):
         lambda_C = self.opt.lambda_C
         lambda_D = self.opt.lambda_D
         lambda_E = self.opt.lambda_E
-        self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
-                      lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
-
+        # self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
+        #               lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
+        #               lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
+        #               lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
+        #               lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
+        self.loss_G = self.criterionGAN(self.netD(self.Generate_Img), True)
         self.loss_G = self.loss_G
         self.loss_G.backward()
 
@@ -821,7 +821,7 @@ class SPUGANModel(BaseModel):
 
         # 优化生成器
         self.set_requires_grad([self.netD], False)
-        self.optimizer_G.zero_grad()  # 将 G_A 和 G_B 的梯度设置为零
+        self.optimizer_G.zero_grad()  # 将 G的梯度设置为零
         self.backward_G()  # 计算G的梯度
         self.optimizer_G.step()  # 更新G权重
         # 优化判别器
