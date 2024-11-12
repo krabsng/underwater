@@ -785,7 +785,7 @@ class SPUGANModel(BaseModel):
         lambda_E = self.opt.lambda_E
 
         fake_AB = torch.cat((self.Origin_Img, self.Generate_Img), 1)
-        print(self.netD.device)  # 打印模型所在设备
+        print(self.netD.module.device)  # 打印模型所在设备
         print(fake_AB.device)  # 打印输入数据所在设备
         pred_fake = self.netD(fake_AB)
 
