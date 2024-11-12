@@ -13,6 +13,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torchvision import models
 from utils import utils
 from . import networks
+from torch.autograd import Variable
+import numpy as np
 
 def to_3d(x):
     return rearrange(x, 'b c h w -> b (h w) c')
@@ -700,7 +702,7 @@ class SPUGANModel(BaseModel):
         # 损失的名称
         self.loss_names = ["G", "D"]
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netSPU = SPUNet(SR=self.SR, Prompt=self.Prompt).to(self.device)
+        self.netSPU = SPUNet(SR=False, Prompt=self.Prompt).to(self.device)
         if self.isTrain:
             self.netD = VGG19_Discriminator()
         if opt.distributed:
@@ -734,7 +736,7 @@ class SPUGANModel(BaseModel):
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
         self.TotalVariation_loss = TotalVariationLoss()
         self.network_loss.eval()  # 不计算梯度
-        self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)  # 定义GAN损失.
+        self.criterionGAN = networks.GANLoss("lsgan").to(self.device)  # 定义GAN损失.
         #endregion
 
         self.model_names = ['SPU']
@@ -755,6 +757,8 @@ class SPUGANModel(BaseModel):
         self.Origin_Img = input['A'].to(self.device)  # 图片为处理过后的张量
         if self.isTrain is not None:
             self.GT_Img = input['B'].to(self.device)
+        if self.SR:
+            self.Origin_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False) # bilinear 双线性
         self.image_paths = input['A_paths']
 
     def forward(self):
@@ -778,41 +782,34 @@ class SPUGANModel(BaseModel):
         lambda_C = self.opt.lambda_C
         lambda_D = self.opt.lambda_D
         lambda_E = self.opt.lambda_E
+
+        fake_AB = torch.cat((self.Origin_Img, self.Generate_Img), 1)
+        pred_fake = self.netD(fake_AB)
+
         # self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
         #               lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
         #               lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
         #               lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
         #               lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
-        self.loss_G = lambda_E * self.criterionGAN(self.netD(self.Generate_Img), True)
+        self.loss_G = lambda_E * self.criterionGAN(pred_fake, True)
         self.loss_G = self.loss_G
         self.loss_G.backward()
 
 
-    def backward_D_basic(self, netD, real, fake):
-        """计算鉴别器的GAN损失
-
-        参数：
-            netD (network)      -- 判别器 D
-            real (tensor array) -- 真实图像
-            fake (tensor array) -- 生成器生成的图像
-
-        返回判别器损失。
-        我们还调用 loss_D.backward() 来计算梯度。  优化器的step()方法是用来更新梯度的
-        """
-        # Real
-        pred_real = netD(real)
-        loss_D_real = self.criterionGAN(pred_real, True)  # 此时 gan_mode = lsgan 损失函数为 nn.MSELoss()
-        # Fake
-        pred_fake = netD(fake.detach())  # detach()函数是PyTorch张量的的方法之一,其作用是创建一个与原始张量相同的数据,但不具备梯度
-        loss_D_fake = self.criterionGAN(pred_fake, False)
-        # 组合损失并计算梯度
-        loss_D = (loss_D_real + loss_D_fake) * 0.5
-        loss_D.backward()
-        return loss_D
-
-
     def backward_D(self):
-        self.loss_D = self.backward_D_basic(self.netD, self.GT_Img, self.Generate_Img)
+        """Calculate GAN loss for the discriminator"""
+        # Fake; stop backprop to the generator by detaching fake_B
+        fake_AB = torch.cat((self.Origin_Img, self.Generate_Img),
+                            1)  # we use conditional GANs; we need to feed both input and output to the discriminator
+        pred_fake = self.netD(fake_AB.detach())
+        self.loss_D_fake = self.criterionGAN(pred_fake, False)
+        # Real
+        real_AB = torch.cat((self.Origin_Img, self.GT_Img), 1)
+        pred_real = self.netD(real_AB)
+        self.loss_D_real = self.criterionGAN(pred_real, True)
+        # combine loss and calculate gradients
+        self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
+        self.loss_D.backward()
 
     def optimize_parameters(self):
         """计算损失、梯度并更新网络权重;在每次训练迭代中调用"""
