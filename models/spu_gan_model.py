@@ -842,8 +842,8 @@ class SPUGANModel(BaseModel):
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
             parser.add_argument('--lambda_A', type=float, default=1, help='')  # SSIM
-            parser.add_argument('--lambda_B', type=float, default=1, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=1, help='')  # L2
-            parser.add_argument('--lambda_D', type=float, default=1, help='')  # 全变差
-            parser.add_argument('--lambda_E', type=float, default=1, help='')  # GAN
+            parser.add_argument('--lambda_B', type=float, default=0, help='')  # netWork
+            parser.add_argument('--lambda_C', type=float, default=0, help='')  # L2
+            parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
+            parser.add_argument('--lambda_E', type=float, default=0, help='')  # GAN
         return parser
