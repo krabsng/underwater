@@ -705,7 +705,7 @@ class SPUGANModel(BaseModel):
         self.netSPU = SPUNet(SR=False, Prompt=self.Prompt).to(self.device)
         if self.isTrain:
             self.netD = networks.define_D(6, 64, "pixel",
-                                          opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids).to(self.device)
+                                          opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
         if opt.distributed:
             self.netSPU = DDP(self.netSPU, device_ids=[opt.gpu])
             self.netD = DDP(self.netD, device_ids=[opt.gpu])
@@ -785,6 +785,8 @@ class SPUGANModel(BaseModel):
         lambda_E = self.opt.lambda_E
 
         fake_AB = torch.cat((self.Origin_Img, self.Generate_Img), 1)
+        print(self.netD.device)  # 打印模型所在设备
+        print(fake_AB.device)  # 打印输入数据所在设备
         pred_fake = self.netD(fake_AB)
 
         # self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
