@@ -37,7 +37,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--gan_mode', type=str, default='lsgan', help='GAN 目标的类型。 [vanilla| lsgan | wgangp]. vanilla GAN损失是原始GAN论文中使用的交叉熵目标。')
         parser.add_argument('--pool_size', type=int, default=50, help='the size of image buffer that stores previously generated images')
         parser.add_argument('--lr_policy', type=str, default='cosine', help='学习率策略. [linear | step | plateau | cosine]')
-        parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
+        parser.add_argument('--lr_decay_iters', type=int, default=50, help='每 lr_decay_iters 次迭代乘以 Gamma')
 
         self.isTrain = True
         return parser
