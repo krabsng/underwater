@@ -495,7 +495,7 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=48, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[4, 4, 4, 4],
+    def __init__(self, in_dim=3, mid_dim=48, out_dim=3, num_blocks=[1, 1, 2, 2], num_heads=[4, 4, 4, 4],
                  win_sizes=[2, 2, 2, 2],Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
@@ -559,7 +559,7 @@ class SPUNet(nn.Module):
 
         self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0),4,2)] +
                                      [SwinTransformerBlock(dim=int(mid_dim // 2), num_heads=8, window_size=2)
-                                     for i in range(2)]))
+                                     for i in range(4)]))
         self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),4,2)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
@@ -657,7 +657,7 @@ class SPUModel(BaseModel):
     def __init__(self, opt):
         super(SPUModel, self).__init__(opt)
         self.opt = opt
-        self.SR = False
+        self.SR = True
         self.Prompt = True
         # 损失的名称
         self.loss_names = ['M', 'L1', 'SSIM', 'NET']
@@ -774,8 +774,8 @@ class SPUModel(BaseModel):
             # parser.add_argument('--lambda_C', type=float, default=100, help='')  # L1
             # parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
 
-            parser.add_argument('--lambda_A', type=float, default=1, help='')  # SSIM
-            parser.add_argument('--lambda_B', type=float, default=0, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=0, help='')  # L1
+            parser.add_argument('--lambda_A', type=float, default=15, help='')  # SSIM
+            parser.add_argument('--lambda_B', type=float, default=5, help='')  # netWork
+            parser.add_argument('--lambda_C', type=float, default=80, help='')  # L1
             parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
         return parser

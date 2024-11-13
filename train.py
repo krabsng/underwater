@@ -30,7 +30,7 @@ if __name__ == '__main__':
     if opt.distributed:
         utils.init_distributed_mode(opt) # 使用分布式训练
 
-    opt.serial_batches = True  # 是否要禁用数据洗牌
+    # opt.serial_batches = True  # 是否要禁用数据洗牌
 
     dataset = create_dataset(opt)  # 创建给定opt.dataset_mode和其他选项的数据集
     dataset_size = len(dataset)    # 获取数据集中的图像数。
