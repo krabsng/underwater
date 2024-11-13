@@ -495,7 +495,7 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[8, 4, 2, 1],
+    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[8, 8, 8, 8],
                  win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
@@ -658,11 +658,11 @@ class SPUModel(BaseModel):
         super(SPUModel, self).__init__(opt)
         self.opt = opt
         self.SR = True
-        self.Prompt = False
+        self.Prompt = True
         # 损失的名称
         self.loss_names = ['M']
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netSPU = SPUNet(SR=self.SR,Prompt=self.Prompt).to(self.device)
+        self.netSPU = SPUNet(SR=False, Prompt=self.Prompt).to(self.device)
         if opt.distributed:
             self.netSPU = DDP(self.netSPU, device_ids=[opt.gpu])
         else:
@@ -710,6 +710,9 @@ class SPUModel(BaseModel):
         self.Origin_Img = input['A'].to(self.device)  # 图片为处理过后的张量
         if self.isTrain is not None:
             self.GT_Img = input['B'].to(self.device)
+        if self.SR:
+            self.Origin_Pro_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic',
+                                                align_corners=False).to(self.device)  # bilinear 双线性
         self.image_paths = input['A_paths']
 
     def forward(self):
@@ -724,7 +727,7 @@ class SPUModel(BaseModel):
         # for param in self.netKrabs.parameters():
         #     print(param.device)
 
-        self.Generate_Img = self.netSPU(self.Origin_Img)
+        self.Generate_Img = self.netSPU(self.Origin_Pro_Img)
 
     def backward(self):
         # 损失函数初始权重比：1:0.04 -> 1:0.1
