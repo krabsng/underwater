@@ -657,7 +657,7 @@ class SPUModel(BaseModel):
     def __init__(self, opt):
         super(SPUModel, self).__init__(opt)
         self.opt = opt
-        self.SR = True
+        self.SR = False
         self.Prompt = True
         # 损失的名称
         self.loss_names = ['M', 'L1', 'SSIM', 'NET']

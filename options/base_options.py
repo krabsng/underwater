@@ -46,7 +46,7 @@ class BaseOptions():
                             help='scaling factor for normal, xavier and orthogonal.')
         parser.add_argument('--no_dropout', action='store_true', help='生成器未使用dropout')
         # 数据集参数
-        parser.add_argument('--dataset_mode', type=str, default='sr',
+        parser.add_argument('--dataset_mode', type=str, default='underwater',
                             help='选择数据集的加载方式。 [unaligned | aligned | single | colorization | underwater | sr]') # 要使用的数据集
         parser.add_argument('--direction', type=str, default='AtoB', help='AtoB 或 BtoA')
         parser.add_argument('--serial_batches', action='store_true',

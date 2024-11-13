@@ -30,7 +30,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--distributed', type=str, default=False, help='是否使用分布式训练')
         parser.add_argument('--pretrain_dir', type=str, default=None)
         parser.add_argument('--weight_decay', type=float, default=0.0005)
-        parser.add_argument('--n_epochs', type=int, default=10, help='具有初始学习率的 epoch 数')
+        parser.add_argument('--n_epochs', type=int, default=20, help='具有初始学习率的 epoch 数')
         parser.add_argument('--n_epochs_decay', type=int, default=0, help='线性衰减学习率为零的 epoch 数')
         parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
         parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')
