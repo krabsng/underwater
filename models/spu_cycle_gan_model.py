@@ -10,7 +10,11 @@ from models.base_model import BaseModel
 from loss.totalvariation_loss import TotalVariationLoss
 from loss.ssim_loss import SSIM
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torchvision import models
 from utils import utils
+from . import networks
+from torch.autograd import Variable
+import numpy as np
 
 def to_3d(x):
     return rearrange(x, 'b c h w -> b (h w) c')
@@ -177,23 +181,25 @@ class WindowAttention(nn.Module):
         x = self.proj_drop(x)
         return x
 
+
 class DualPathUpsampling(nn.Module):
-    def __init__(self,in_c, num_heads, window_size):
+    def __init__(self, in_c, num_heads, window_size):
         super().__init__()
         self.conv3 = nn.Conv2d(in_c, in_c * 2, kernel_size=3, stride=1, padding=1, bias=True)
-        self.path1 = TransformerBlock(dim=in_c * 2,num_heads=num_heads,ffn_expansion_factor=2,bias=True,LayerNorm_type='BiasFree')
-        self.path2 = SwinTransformerBlock(dim=in_c * 2,num_heads=num_heads,window_size=window_size)
+        self.path1 = TransformerBlock(dim=in_c * 2, num_heads=num_heads, ffn_expansion_factor=2, bias=True,
+                                      LayerNorm_type='BiasFree')
+        self.path2 = SwinTransformerBlock(dim=in_c * 2, num_heads=num_heads, window_size=window_size)
         self.PS = nn.PixelShuffle(2)
 
     def forward(self, x):
         x = self.conv3(x)
         x1 = self.path1(x)
         x2 = self.path2(x)
-        return self.PS(x1+x2)
+        return self.PS(x1 + x2)
 
 
 class DualPathDownsampling(nn.Module):
-    def __init__(self,in_c,num_heads, window_size):
+    def __init__(self, in_c, num_heads, window_size):
         super().__init__()
         self.conv3 = nn.Conv2d(in_c, in_c // 2, kernel_size=3, stride=1, padding=1, bias=False)
         self.path1 = TransformerBlock(dim=in_c // 2, num_heads=num_heads, ffn_expansion_factor=2, bias=True,
@@ -205,7 +211,8 @@ class DualPathDownsampling(nn.Module):
         x = self.conv3(x)
         x1 = self.path1(x)
         x2 = self.path2(x)
-        return self.PUS(x1+x2)
+        return self.PUS(x1 + x2)
+
 
 class PromptGenBlock(nn.Module):
     """
@@ -257,7 +264,7 @@ class Downsample(nn.Module):
         super(Downsample, self).__init__()
 
         self.body = nn.Sequential(nn.Conv2d(n_feat, n_feat // 2, kernel_size=3, stride=1, padding=1, bias=False),
-                                  nn.PixelUnshuffle(2))
+                                  nn.PixelUnshuffle(2), nn.LeakyReLU(0.2))
 
     def forward(self, x):
         return self.body(x)
@@ -272,7 +279,7 @@ class Upsample(nn.Module):
         super(Upsample, self).__init__()
 
         self.body = nn.Sequential(nn.Conv2d(n_feat, n_feat * 2, kernel_size=3, stride=1, padding=1, bias=False),
-                                  nn.PixelShuffle(2))
+                                  nn.PixelShuffle(2), nn.ReLU(inplace=True))
 
     def forward(self, x):
         return self.body(x)
@@ -345,6 +352,7 @@ class Aff_channel(nn.Module):
             对输入张量的每个通道进行线性缩放、偏移和颜色调整。它通过学习参数 alpha、beta 和 color 来对输入数据进行调整。
         不该变输入特征图的尺寸
     """
+
     def __init__(self, dim, channel_first=True):
         super().__init__()
         # learnable
@@ -490,13 +498,14 @@ class OverlapPatchEmbed(nn.Module):
         return x
 
 
+# 定义生成器
 class SPUNet(nn.Module):
     """
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=48, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[4, 4, 8, 8],
-                 win_sizes=[8, 4, 4, 2],Prompt=False, SR=False):
+    def __init__(self, in_dim=3, mid_dim=16, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[4, 4, 8, 8],
+                 win_sizes=[8, 4, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
@@ -557,10 +566,10 @@ class SPUNet(nn.Module):
         )
         self.reduce_c1 = nn.Conv2d(int(mid_dim * 2 ** 1), int(mid_dim * 2 ** 0), kernel_size=1, bias=True)
 
-        self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0),8,2)] +
+        self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0), 8, 2)] +
                                      [SwinTransformerBlock(dim=int(mid_dim // 2), num_heads=8, window_size=2)
-                                     for i in range(2)]))
-        self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),8,2)])
+                                      for i in range(2)]))
+        self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1), 8, 2)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
         if self.Prompt:
@@ -583,7 +592,7 @@ class SPUNet(nn.Module):
             self.prompt1 = PromptGenBlock(prompt_dim=int(mid_dim * 2 ** 1), prompt_len=5, prompt_size=32,
                                           lin_dim=int(mid_dim * 2 ** 1))
             self.noise1 = SwinTransformerBlock(dim=int(mid_dim * 2 ** 2), num_heads=4, window_size=2)
-            self.reduce_noise1 = nn.Conv2d(int(mid_dim * 2 ** 2), int(mid_dim * 2 **1), kernel_size=1, bias=True)
+            self.reduce_noise1 = nn.Conv2d(int(mid_dim * 2 ** 2), int(mid_dim * 2 ** 1), kernel_size=1, bias=True)
 
     def forward(self, x):
         # (3, 256, 256) -> (32, 256, 256)
@@ -603,7 +612,7 @@ class SPUNet(nn.Module):
 
         # (512, 16, 16) -> (256, 32, 32)
         d_u4 = self.up4(e_d4)
-        rc4 = self.reduce_c4(torch.cat([d_u4, e4], dim=1)) # ↓
+        rc4 = self.reduce_c4(torch.cat([d_u4, e4], dim=1))  # ↓
         d4 = self.decoder4(rc4)
         if self.Prompt:
             prompt3 = self.prompt3(d4)
@@ -648,26 +657,66 @@ class SPUNet(nn.Module):
         # ----------------修改--结束----------------------- #
 
 
-class SPUModel(BaseModel):
+class VGG19_Discriminator(nn.Module):
+    """
+        定义VGG19作为判别器
+    """
+
+    def __init__(self, _pretrained_=True):
+        super(VGG19_Discriminator, self).__init__()
+        self.vgg = models.vgg19(pretrained=_pretrained_).features
+        # 冻结VGG19卷积层的参数
+        for param in self.vgg.parameters():
+            param.requires_grad_(False)
+        # 自适应平均池化，将输出调整为 7x7（可根据需要调整）
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((8, 8))
+        # 添加判别器的自定义全连接层
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(512 * 8 * 8, 512)  # 假设输入为224x224的图像
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+        self.fc2 = nn.Linear(512, 1)
+        self.sigmoid = nn.Sigmoid()  # 输出为1表示真实，0表示生成
+
+    def forward(self, x):
+        # 使用VGG19提取特征
+        x = self.vgg(x)
+        x = self.adaptive_pool(x)
+        # 展平并通过全连接层
+        x = self.flatten(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x)
+        x = self.sigmoid(x)
+
+        return x
+
+
+class SPUGANModel(BaseModel):
     """
         此类使用了自定义的Krabs模型，用于在配对数据的情况下学习图像到图像的转换。
        模型训练需要“ --dataset_mode unaligned”数据集。
        """
 
     def __init__(self, opt):
-        super(SPUModel, self).__init__(opt)
+        super(SPUGANModel, self).__init__(opt)
         self.opt = opt
-        self.SR = True
-        self.Prompt = True
+        self.SR = True  # 是否是进行超分辨率训练
+        self.Prompt = True # 是否使用提示学习
         # 损失的名称
-        self.loss_names = ['M', 'L1', 'SSIM', 'Net']
+        self.loss_names = ["G", "D", "L1", "SSIM", "NET", "L1", "GAN"]
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netSPU = SPUNet(SR=self.SR, Prompt=self.Prompt).to(self.device)
+        self.netSPU = SPUNet(SR=True, Prompt=self.Prompt).to(self.device)
+        if self.isTrain:
+            self.netD = networks.define_D(6, 64, "pixel",
+                                          opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
         if opt.distributed:
             self.netSPU = DDP(self.netSPU, device_ids=[opt.gpu])
+            # self.netD = DDP(self.netD, device_ids=[opt.gpu])
         else:
             self.netSPU = torch.nn.DataParallel(self.netSPU, opt.gpu_ids).to(self.device)
-
+            # self.netD = torch.nn.DataParallel(self.netD, opt.gpu_ids).to(self.device)
         # self.netKrabs = torch.nn.DataParallel(KrabsNet(SR=self.SR), opt.gpu_ids)
         # self.netKrabs = self.netKrabs.to(self.device)
 
@@ -685,21 +734,25 @@ class SPUModel(BaseModel):
                 self.netSPU.load_state_dict(
                     torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
 
-        # 定义要用到的损失
+        #region 定义一些要用到的损失函数
         vgg_model = vgg16(pretrained=True).features[:16]  # 定义vgg网络，加载预训练权重，并把它放到gpu上去
-        vgg_model= vgg_model.to(self.device)
-
-        self.L1_loss = nn.MSELoss()  # 定义L1损失
+        vgg_model = vgg_model.to(self.device)
+        self.L1_loss = nn.L1Loss() # 定义L1损失
         self.ssim_loss = SSIM()  # 定义L1smooth损失
         self.net_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
         # self.TotalVariation_loss = TotalVariationLoss()
         self.net_loss.eval()  # 不计算梯度
+        self.criterionGAN = networks.GANLoss("lsgan").to(self.device)  # 定义GAN损失.
+        #endregion
+
         self.model_names = ['SPU']
         # 保存模型
         if self.isTrain:
             # 定义优化器,调整学习率的scheduler由basemodel里的函数创建
-            self.optimizer = torch.optim.Adam(self.netSPU.parameters(), opt.lr, weight_decay=opt.weight_decay)
-            self.optimizers.append(self.optimizer)
+            self.optimizer_G = torch.optim.Adam(self.netSPU.parameters(), opt.lr, weight_decay=opt.weight_decay)
+            self.optimizer_D = torch.optim.Adam(self.netD.parameters(), opt.lr, weight_decay=opt.weight_decay)
+            self.optimizers.append(self.optimizer_G)
+            self.optimizers.append(self.optimizer_D)
 
     def set_input(self, input):
         """从数据加载器解压缩输入数据并执行必要的预处理步骤.
@@ -710,9 +763,8 @@ class SPUModel(BaseModel):
         self.Origin_Img = input['A'].to(self.device)  # 图片为处理过后的张量
         if self.isTrain is not None:
             self.GT_Img = input['B'].to(self.device)
-        # if self.SR:
-        #     self.Origin_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic',
-        #                                     align_corners=False).to(self.device)  # bilinear 双线性
+        if self.SR:
+            self.Origin_Pro_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False).to(self.device) # bilinear 双线性
         self.image_paths = input['A_paths']
 
     def forward(self):
@@ -729,31 +781,59 @@ class SPUModel(BaseModel):
 
         self.Generate_Img = self.netSPU(self.Origin_Img)
 
-    def backward(self):
+    def backward_G(self):
         # 损失函数初始权重比：1:0.04 -> 1:0.1
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
         lambda_C = self.opt.lambda_C
         lambda_D = self.opt.lambda_D
+        lambda_E = self.opt.lambda_E
+
+        fake_AB = torch.cat((self.Origin_Pro_Img, self.Generate_Img), 1)
+        pred_fake = self.netD(fake_AB)
+        self.loss_GAN = self.criterionGAN(pred_fake, True)
         self.loss_L1 = self.L1_loss(self.Generate_Img, self.GT_Img)
         self.loss_SSIM = self.ssim_loss(self.Generate_Img, self.GT_Img)
         self.loss_NET = self.net_loss(self.Generate_Img, self.GT_Img)
 
-        self.loss_M = lambda_A * self.loss_SSIM + \
+        self.loss_G = lambda_A * self.loss_SSIM +\
                       lambda_B * self.loss_NET + \
-                      lambda_C * self.loss_L1
+                      lambda_C * self.loss_L1 + \
+                      lambda_E * self.loss_GAN
+        # lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
+        self.loss_G.backward()
 
-        # lambda_D * self.TotalVariation_loss(self.Generate_Img)
-        self.loss_M.backward()
+
+    def backward_D(self):
+        """Calculate GAN loss for the discriminator"""
+        # Fake; stop backprop to the generator by detaching fake_B
+        fake_AB = torch.cat((self.Origin_Pro_Img, self.Generate_Img),
+                            1)  # we use conditional GANs; we need to feed both input and output to the discriminator
+        pred_fake = self.netD(fake_AB.detach())
+        self.loss_D_fake = self.criterionGAN(pred_fake, False)
+        # Real
+        real_AB = torch.cat((self.Origin_Pro_Img, self.GT_Img), 1)
+        pred_real = self.netD(real_AB)
+        self.loss_D_real = self.criterionGAN(pred_real, True)
+        # combine loss and calculate gradients
+        self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
+        self.loss_D.backward()
 
     def optimize_parameters(self):
         """计算损失、梯度并更新网络权重;在每次训练迭代中调用"""
         # forward
         self.forward()  # 生成脱水图像.
-        # G_A 和 G_B
-        self.optimizer.zero_grad()  # 将网络的梯度设置为零
-        self.backward()  # 计算网络的梯度
-        self.optimizer.step()  # 更新网络的权重
+
+        # 优化生成器
+        self.set_requires_grad([self.netD], False)
+        self.optimizer_G.zero_grad()  # 将 G的梯度设置为零
+        self.backward_G()  # 计算G的梯度
+        self.optimizer_G.step()  # 更新G权重
+        # 优化判别器
+        self.set_requires_grad([self.netD], True)
+        self.optimizer_D.zero_grad()  # 将D的梯度设置为零
+        self.backward_D()  # 计算D梯度
+        self.optimizer_D.step()  # 更新D权重
 
     @staticmethod
     def modify_commandline_options(parser, is_train=True):
@@ -769,8 +849,9 @@ class SPUModel(BaseModel):
         """
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
-            parser.add_argument('--lambda_A', type=float, default=0.3, help='')  # SSIM
-            parser.add_argument('--lambda_B', type=float, default=0.1, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=0.6, help='')  # L1
+            parser.add_argument('--lambda_A', type=float, default=0.25, help='')  # SSIM
+            parser.add_argument('--lambda_B', type=float, default=0.125, help='')  # netWork
+            parser.add_argument('--lambda_C', type=float, default=0.45, help='')  # L1
             parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
+            parser.add_argument('--lambda_E', type=float, default=0.175, help='')  # GAN
         return parser
