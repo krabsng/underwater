@@ -66,7 +66,7 @@ class SRDataset(BaseDataset):
         self.output_nc = self.opt.output_nc
 
         # 截取列表中前100个数据用于测试
-        # self.data_list = self.data_list[:100]
+        self.data_list = self.data_list[:50]
 
     def __getitem__(self, index):
         """返回数据点及其元数据信息。
