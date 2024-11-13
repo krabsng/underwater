@@ -496,7 +496,7 @@ class SPUNet(nn.Module):
     """
 
     def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[4, 4, 8, 8],
-                 win_sizes=[8, 8, 4, 4],Prompt=False, SR=False):
+                 win_sizes=[8, 4, 4, 2],Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
