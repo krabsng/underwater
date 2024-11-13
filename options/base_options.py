@@ -22,7 +22,7 @@ class BaseOptions():
         # 基本参数
         parser.add_argument('--dataroot', default="/a.krabs/dataset/EUVP/Paired/",
                             help='图像路径（应具有子文件夹 trainA、trainB、valA、valB 等）') # 使用哪個數據集
-        parser.add_argument('--name', type=str, default='spu_sr',
+        parser.add_argument('--name', type=str, default='spu_L1_loss',
                             help='实验的名称。它决定将样本和模型存储在何处')  # 本轮实验的名称
         parser.add_argument('--gpu_ids', type=str, default='0,1,2,3', help='GPU ID：例如 0 0,1,2， 0,2。使用 -1 表示 CPU') # 要使用的GPU
         parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='模型保存在此处')
