@@ -495,7 +495,7 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[4, 4, 4, 4],
+    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[2, 2, 2, 2],
                  win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
