@@ -702,7 +702,7 @@ class SPUGANModel(BaseModel):
         # 损失的名称
         self.loss_names = ["G", "D"]
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netSPU = SPUNet(SR=False, Prompt=self.Prompt).to(self.device)
+        self.netSPU = SPUNet(SR=True, Prompt=self.Prompt).to(self.device)
         if self.isTrain:
             self.netD = networks.define_D(6, 64, "pixel",
                                           opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
@@ -758,8 +758,8 @@ class SPUGANModel(BaseModel):
         self.Origin_Img = input['A'].to(self.device)  # 图片为处理过后的张量
         if self.isTrain is not None:
             self.GT_Img = input['B'].to(self.device)
-        if self.SR:
-            self.Origin_Pro_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False).to(self.device) # bilinear 双线性
+        # if self.SR:
+        #     self.Origin_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic', align_corners=False).to(self.device) # bilinear 双线性
         self.image_paths = input['A_paths']
 
     def forward(self):
@@ -774,7 +774,7 @@ class SPUGANModel(BaseModel):
         # for param in self.netKrabs.parameters():
         #     print(param.device)
 
-        self.Generate_Img = self.netSPU(self.Origin_Pro_Img)
+        self.Generate_Img = self.netSPU(self.Origin_Img)
 
     def backward_G(self):
         # 损失函数初始权重比：1:0.04 -> 1:0.1
@@ -784,7 +784,7 @@ class SPUGANModel(BaseModel):
         lambda_D = self.opt.lambda_D
         lambda_E = self.opt.lambda_E
 
-        fake_AB = torch.cat((self.Origin_Pro_Img, self.Generate_Img), 1)
+        fake_AB = torch.cat((self.Origin_Img, self.Generate_Img), 1)
         pred_fake = self.netD(fake_AB)
 
         self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
@@ -799,12 +799,12 @@ class SPUGANModel(BaseModel):
     def backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
-        fake_AB = torch.cat((self.Origin_Pro_Img, self.Generate_Img),
+        fake_AB = torch.cat((self.Origin_Img, self.Generate_Img),
                             1)  # we use conditional GANs; we need to feed both input and output to the discriminator
         pred_fake = self.netD(fake_AB.detach())
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
-        real_AB = torch.cat((self.Origin_Pro_Img, self.GT_Img), 1)
+        real_AB = torch.cat((self.Origin_Img, self.GT_Img), 1)
         pred_real = self.netD(real_AB)
         self.loss_D_real = self.criterionGAN(pred_real, True)
         # combine loss and calculate gradients
