@@ -407,8 +407,8 @@ class SwinTransformerBlock(nn.Module):
         norm_layer (nn.Module, optional): 激活层。默认值：nn.GELU。
     """
 
-    def __init__(self, dim, num_heads=2, window_size=8, shift_size=0,
-                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0.,
+    def __init__(self, dim, num_heads=2, window_size=8, shift_size=1,
+                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.05, drop_path=0.05,
                  act_layer=nn.GELU, norm_layer=Aff_channel):
         super().__init__()
         self.dim = dim
@@ -504,8 +504,8 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=16, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[4, 2, 2, 1],
-                 win_sizes=[4, 4, 2, 2], Prompt=False, SR=False):
+    def __init__(self, in_dim=3, mid_dim=16, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[4, 4, 8, 8],
+                 win_sizes=[8, 4, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
@@ -566,10 +566,10 @@ class SPUNet(nn.Module):
         )
         self.reduce_c1 = nn.Conv2d(int(mid_dim * 2 ** 1), int(mid_dim * 2 ** 0), kernel_size=1, bias=True)
 
-        self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0), 2, 4)] +
-                                     [SwinTransformerBlock(dim=int(mid_dim // 2), num_heads=2, window_size=2)
+        self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0), 8, 2)] +
+                                     [SwinTransformerBlock(dim=int(mid_dim // 2), num_heads=8, window_size=2)
                                       for i in range(2)]))
-        self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1), 2, 4)])
+        self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1), 8, 2)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
         if self.Prompt:
@@ -797,7 +797,6 @@ class SPUGANModel(BaseModel):
                       lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_E * self.criterionGAN(pred_fake, True)
         # lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
-        self.loss_G = self.loss_G
         self.loss_G.backward()
 
 
@@ -848,7 +847,7 @@ class SPUGANModel(BaseModel):
         if is_train:
             parser.add_argument('--lambda_A', type=float, default=0.45, help='')  # SSIM
             parser.add_argument('--lambda_B', type=float, default=0.1, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=0.2, help='')  # L1
+            parser.add_argument('--lambda_C', type=float, default=0.35, help='')  # L1
             parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
-            parser.add_argument('--lambda_E', type=float, default=0.25, help='')  # GAN
+            parser.add_argument('--lambda_E', type=float, default=0.1, help='')  # GAN
         return parser

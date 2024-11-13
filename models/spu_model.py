@@ -739,7 +739,6 @@ class SPUModel(BaseModel):
                       lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img)
                       # lambda_D * self.TotalVariation_loss(self.Generate_Img)
-        # self.loss_M = 10 * self.loss_M
         self.loss_M.backward()
 
     def optimize_parameters(self):
@@ -765,8 +764,8 @@ class SPUModel(BaseModel):
         """
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
-            parser.add_argument('--lambda_A', type=float, default=0.3, help='')  # SSIM
-            parser.add_argument('--lambda_B', type=float, default=0.2, help='')  # netWork
+            parser.add_argument('--lambda_A', type=float, default=0.4, help='')  # SSIM
+            parser.add_argument('--lambda_B', type=float, default=0.1, help='')  # netWork
             parser.add_argument('--lambda_C', type=float, default=0.5, help='')  # L1
             parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
         return parser
