@@ -495,8 +495,8 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=48, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[4, 4, 8, 8],
-                 win_sizes=[8, 4, 4, 2],Prompt=False, SR=False):
+    def __init__(self, in_dim=3, mid_dim=48, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[4, 4, 4, 4],
+                 win_sizes=[2, 2, 2, 2],Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
         self.Prompt = Prompt
@@ -557,10 +557,10 @@ class SPUNet(nn.Module):
         )
         self.reduce_c1 = nn.Conv2d(int(mid_dim * 2 ** 1), int(mid_dim * 2 ** 0), kernel_size=1, bias=True)
 
-        self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0),8,2)] +
+        self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0),4,2)] +
                                      [SwinTransformerBlock(dim=int(mid_dim // 2), num_heads=8, window_size=2)
                                      for i in range(2)]))
-        self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),8,2)])
+        self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),4,2)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
         if self.Prompt:
