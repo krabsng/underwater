@@ -702,7 +702,7 @@ class SPUGANModel(BaseModel):
         # 损失的名称
         self.loss_names = ["G", "D"]
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
-        self.netSPU = SPUNet(SR=False, Prompt=self.Prompt).to(self.device)
+        self.netSPU = SPUNet(SR=True, Prompt=self.Prompt).to(self.device)
         if self.isTrain:
             self.netD = networks.define_D(6, 64, "pixel",
                                           opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
@@ -774,7 +774,7 @@ class SPUGANModel(BaseModel):
         # for param in self.netKrabs.parameters():
         #     print(param.device)
 
-        self.Generate_Img = self.netSPU(self.Origin_Pro_Img)
+        self.Generate_Img = self.netSPU(self.Origin_Img)
 
     def backward_G(self):
         # 损失函数初始权重比：1:0.04 -> 1:0.1
