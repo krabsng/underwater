@@ -10,7 +10,7 @@ class TrainOptions(BaseOptions):
     def initialize(self, parser):
         parser = BaseOptions.initialize(self, parser)
         # visdom 和 HTML 可视化参数
-        parser.add_argument('--display_freq', type=int, default=25, help='在屏幕上显示训练结果的频率')
+        parser.add_argument('--display_freq', type=int, default=200, help='在屏幕上显示训练结果的频率')
         parser.add_argument('--display_ncols', type=int, default=4, help='如果为正数，则在单个 Visdom Web 面板中显示所有图像，每行显示一定数量的图像。')
         parser.add_argument('--display_id', type=int, default=1, help='Web 显示的窗口 ID') # default设置成0就可以禁用visdom
         parser.add_argument('--display_server', type=str, default="http://localhost", help='Web 显示的 Visdom 服务器')
@@ -30,8 +30,8 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--distributed', type=str, default=False, help='是否使用分布式训练')
         parser.add_argument('--pretrain_dir', type=str, default=None)
         parser.add_argument('--weight_decay', type=float, default=0.0005)
-        parser.add_argument('--n_epochs', type=int, default=15, help='具有初始学习率的 epoch 数')
-        parser.add_argument('--n_epochs_decay', type=int, default=15, help='线性衰减学习率为零的 epoch 数')
+        parser.add_argument('--n_epochs', type=int, default=100, help='具有初始学习率的 epoch 数')
+        parser.add_argument('--n_epochs_decay', type=int, default=100, help='线性衰减学习率为零的 epoch 数')
         parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
         parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')
         parser.add_argument('--gan_mode', type=str, default='lsgan', help='GAN 目标的类型。 [vanilla| lsgan | wgangp]. vanilla GAN损失是原始GAN论文中使用的交叉熵目标。')

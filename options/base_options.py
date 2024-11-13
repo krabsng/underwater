@@ -21,13 +21,13 @@ class BaseOptions():
         """Define the common options that are used in both training and test."""
         # 基本参数
         parser.add_argument('--dataroot', default="/a.krabs/dataset/EUVP/Paired/",
-                            help='图像路径（应具有子文件夹 trainA、trainB、valA、valB 等）') # 在AI主机上训练设置的参数
-        parser.add_argument('--name', type=str, default='spu_gan_sr',
+                            help='图像路径（应具有子文件夹 trainA、trainB、valA、valB 等）') # 使用哪個數據集
+        parser.add_argument('--name', type=str, default='spu_sr',
                             help='实验的名称。它决定将样本和模型存储在何处')  # 本轮实验的名称
         parser.add_argument('--gpu_ids', type=str, default='0,1,2,3', help='GPU ID：例如 0 0,1,2， 0,2。使用 -1 表示 CPU') # 要使用的GPU
         parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='模型保存在此处')
         # 模型参数
-        parser.add_argument('--model', type=str, default='spu_gan',
+        parser.add_argument('--model', type=str, default='spu',
                             help='chooses which model to use. [cycle_gan | pix2pix | test | colorization | krabs | spu_gan | spu]') # 要使用的模型
         parser.add_argument('--input_nc', type=int, default=3, help='# 输入图像通道数：RGB 为 3 个，灰度为 1 个')
         parser.add_argument('--output_nc', type=int, default=3, help='# 输出图像通道数：RGB 为 3 个，灰度为 1 个')

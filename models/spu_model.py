@@ -474,14 +474,19 @@ class OverlapPatchEmbed(nn.Module):
         提取高纬度的特征
     """
 
-    def __init__(self, in_c=3, out_c=48, bias=False, type="aa"):
+    def __init__(self, in_c=3, out_c=48, bias=False, activate_type="tanh"):
         super(OverlapPatchEmbed, self).__init__()
         self.proj = nn.Conv2d(in_c, out_c, kernel_size=3, stride=1, padding=1, bias=bias)
-        self.tanh = nn.Tanh()
+        if activate_type == "tanh":
+            self.activation = nn.Tanh()
+        elif activate_type == "relu":
+            self.activation = nn.ReLU()
+        else:
+            self.activation = nn.Identity()
 
     def forward(self, x):
         x = self.proj(x)
-        x = self.tanh(x)
+        x = self.activation(x)
         return x
 
 
@@ -490,7 +495,7 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[0, 0, 1, 1], num_heads=[8, 4, 2, 1],
+    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[8, 4, 2, 1],
                  win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
@@ -687,7 +692,7 @@ class SPUModel(BaseModel):
         self.L1_loss = nn.MSELoss()  # 定义L1损失
         self.ssim_loss = SSIM()  # 定义L1smooth损失
         self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
-        self.TotalVariation_loss = TotalVariationLoss()
+        # self.TotalVariation_loss = TotalVariationLoss()
         self.network_loss.eval()  # 不计算梯度
         self.model_names = ['SPU']
         # 保存模型
@@ -729,11 +734,9 @@ class SPUModel(BaseModel):
         lambda_D = self.opt.lambda_D
         self.loss_M = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
                       lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_D * self.TotalVariation_loss(self.Generate_Img)
-        # self.loss_M = lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
-        #               lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img)
-        self.loss_M = 100 * self.loss_M
+                      lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img)
+                      # lambda_D * self.TotalVariation_loss(self.Generate_Img)
+        self.loss_M = 10 * self.loss_M
         self.loss_M.backward()
 
     def optimize_parameters(self):
@@ -759,8 +762,9 @@ class SPUModel(BaseModel):
         """
         parser.set_defaults(no_dropout=True)  # 默认 CycleGAN 不使用 dropout
         if is_train:
-            parser.add_argument('--lambda_A', type=float, default=0.1, help='')  # SSIM
-            parser.add_argument('--lambda_B', type=float, default=0.2, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=0.4, help='')  # L2
-            parser.add_argument('--lambda_D', type=float, default=0.1, help='')  # 全变差
+            parser.add_argument('--lambda_A', type=float, default=0.45, help='')  # SSIM
+            parser.add_argument('--lambda_B', type=float, default=0.1, help='')  # netWork
+            parser.add_argument('--lambda_C', type=float, default=0.2, help='')  # L1
+            parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
+            parser.add_argument('--lambda_E', type=float, default=0.25, help='')  # GAN
         return parser
