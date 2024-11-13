@@ -10,17 +10,17 @@ class TrainOptions(BaseOptions):
     def initialize(self, parser):
         parser = BaseOptions.initialize(self, parser)
         # visdom 和 HTML 可视化参数
-        parser.add_argument('--display_freq', type=int, default=100, help='在屏幕上显示训练结果的频率')
+        parser.add_argument('--display_freq', type=int, default=1, help='在屏幕上显示训练结果的频率')
         parser.add_argument('--display_ncols', type=int, default=4, help='如果为正数，则在单个 Visdom Web 面板中显示所有图像，每行显示一定数量的图像。')
         parser.add_argument('--display_id', type=int, default=1, help='Web 显示的窗口 ID') # default设置成0就可以禁用visdom
         parser.add_argument('--display_server', type=str, default="http://localhost", help='Web 显示的 Visdom 服务器')
         parser.add_argument('--display_env', type=str, default='main', help='Visdom 显示环境名称（默认为 “main”）')
         parser.add_argument('--display_port', type=int, default=8097, help='Web 显示的 visdom 端口')
-        parser.add_argument('--update_html_freq', type=int, default=1000, help='将训练结果保存到 HTML 的频率')
-        parser.add_argument('--print_freq', type=int, default=100, help='在控制台上显示训练结果的频率')
+        parser.add_argument('--update_html_freq', type=int, default=1, help='将训练结果保存到 HTML 的频率')
+        parser.add_argument('--print_freq', type=int, default=1, help='在控制台上显示训练结果的频率')
         parser.add_argument('--no_html', action='store_true', help='不要将中级训练结果保存到 [opt.checkpoints_dir]/[opt.name]/web/')
         # 网络保存和加载参数f
-        parser.add_argument('--save_latest_freq', type=int, default=5000, help='保存最新结果的频率')
+        parser.add_argument('--save_latest_freq', type=int, default=10, help='保存最新结果的频率')
         parser.add_argument('--save_epoch_freq', type=int, default=5, help='在epochs结束时保存检查点的频率')
         parser.add_argument('--save_by_iter', action='store_true', help='是否通过迭代保存模型')
         parser.add_argument('--continue_train', action='store_true', help='继续训练：加载最新模型')
