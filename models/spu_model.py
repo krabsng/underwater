@@ -676,14 +676,14 @@ class SPUModel(BaseModel):
             self.visual_names = ['Origin_Img', 'Generate_Img']
         else:
             self.visual_names = ['Origin_Img', 'Generate_Img', 'GT_Img']
-        if not self.SR:
-            # 加载网络的预训权重
-            if isinstance(self.netSPU, torch.nn.DataParallel):
-                self.netSPU.module.load_state_dict(
-                    torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
-            else:
-                self.netSPU.load_state_dict(
-                    torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
+        # if not self.SR:
+        #     # 加载网络的预训权重
+        #     if isinstance(self.netSPU, torch.nn.DataParallel):
+        #         self.netSPU.module.load_state_dict(
+        #             torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
+        #     else:
+        #         self.netSPU.load_state_dict(
+        #             torch.load('/a.krabs/krabs/checkpoints/krabs_net_sr/100_net_Krabs.pth'))
 
         # 定义要用到的损失
         vgg_model = vgg16(pretrained=True).features[:16]  # 定义vgg网络，加载预训练权重，并把它放到gpu上去
