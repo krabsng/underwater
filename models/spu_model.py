@@ -495,7 +495,7 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[1, 1, 2, 2], num_heads=[8, 8, 8, 8],
+    def __init__(self, in_dim=3, mid_dim=32, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[8, 8, 8, 8],
                  win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
@@ -711,8 +711,8 @@ class SPUModel(BaseModel):
         if self.isTrain is not None:
             self.GT_Img = input['B'].to(self.device)
         if self.SR:
-            self.Origin_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic',
-                                            align_corners=False).to(self.device)  # bilinear 双线性
+            self.Origin_Pro_Img = F.interpolate(self.Origin_Img, scale_factor=2, mode='bicubic',
+                                                align_corners=False).to(self.device)  # bilinear 双线性
         self.image_paths = input['A_paths']
 
     def forward(self):
@@ -727,7 +727,7 @@ class SPUModel(BaseModel):
         # for param in self.netKrabs.parameters():
         #     print(param.device)
 
-        self.Generate_Img = self.netSPU(self.Origin_Img)
+        self.Generate_Img = self.netSPU(self.Origin_Pro_Img)
 
     def backward(self):
         # 损失函数初始权重比：1:0.04 -> 1:0.1
