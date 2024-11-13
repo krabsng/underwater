@@ -264,7 +264,7 @@ class Downsample(nn.Module):
         super(Downsample, self).__init__()
 
         self.body = nn.Sequential(nn.Conv2d(n_feat, n_feat // 2, kernel_size=3, stride=1, padding=1, bias=False),
-                                  nn.PixelUnshuffle(2))
+                                  nn.PixelUnshuffle(2), nn.LeakyReLU(0.2))
 
     def forward(self, x):
         return self.body(x)
@@ -279,7 +279,7 @@ class Upsample(nn.Module):
         super(Upsample, self).__init__()
 
         self.body = nn.Sequential(nn.Conv2d(n_feat, n_feat * 2, kernel_size=3, stride=1, padding=1, bias=False),
-                                  nn.PixelShuffle(2))
+                                  nn.PixelShuffle(2), nn.ReLU(inplace=True))
 
     def forward(self, x):
         return self.body(x)
@@ -482,14 +482,19 @@ class OverlapPatchEmbed(nn.Module):
         提取高纬度的特征
     """
 
-    def __init__(self, in_c=3, out_c=48, bias=False, type="aa"):
+    def __init__(self, in_c=3, out_c=48, bias=False, activate_type="tanh"):
         super(OverlapPatchEmbed, self).__init__()
         self.proj = nn.Conv2d(in_c, out_c, kernel_size=3, stride=1, padding=1, bias=bias)
-        self.tanh = nn.Tanh()
+        if activate_type == "tanh":
+            self.activation = nn.Tanh()
+        elif activate_type == "relu":
+            self.activation = nn.ReLU()
+        else:
+            self.activation = nn.Identity()
 
     def forward(self, x):
         x = self.proj(x)
-        x = self.tanh(x)
+        x = self.activation(x)
         return x
 
 

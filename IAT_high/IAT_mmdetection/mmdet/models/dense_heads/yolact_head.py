@@ -131,7 +131,7 @@ class YOLACTHead(AnchorHead):
             x = head_conv(x)
         cls_score = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
-        coeff_pred = self.conv_coeff(x).tanh()
+        coeff_pred = self.conv_coeff(x).activation()
         return cls_score, bbox_pred, coeff_pred
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
