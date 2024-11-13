@@ -66,7 +66,7 @@ class UnderwaterDataset(BaseDataset):
         self.output_nc = self.opt.output_nc
 
         # 截取列表中前100个数据用于测试
-        self.data_list = self.data_list[:50]
+        self.data_list = self.data_list[100:200]
 
         # self.Apaths = sorted(make_dataset(self.dir_A, opt.max_dataset_size))  # 获取图像A的所有路径
         # self.Bpaths = sorted(make_dataset(self.dir_B, opt.max_dataset_size))  # 获取图像B的所有路径
