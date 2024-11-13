@@ -495,7 +495,7 @@ class SPUNet(nn.Module):
         生成器结构，采用4层编码，4层解码结构
     """
 
-    def __init__(self, in_dim=3, mid_dim=16, out_dim=3, num_blocks=[2, 2, 2, 2], num_heads=[8, 8, 8, 8],
+    def __init__(self, in_dim=3, mid_dim=16, out_dim=3, num_blocks=[1, 1, 1, 1], num_heads=[8, 8, 8, 8],
                  win_sizes=[16, 8, 4, 2], Prompt=False, SR=False):
         super(SPUNet, self).__init__()
         self.SR = SR
@@ -559,7 +559,7 @@ class SPUNet(nn.Module):
 
         self.up_sr = nn.Sequential(*([DualPathUpsampling(int(mid_dim * 2 ** 0),2,4)] +
                                      [SwinTransformerBlock(dim=int(mid_dim // 2), num_heads=2, window_size=2)
-                                     for i in range(4)]))
+                                     for i in range(2)]))
         self.dw_lr = nn.Sequential(*[DualPathDownsampling(int(mid_dim * 2 ** -1),2,4)])
         self.lr_p = OverlapPatchEmbed(in_c=mid_dim, out_c=out_dim)
         self.sr_p = OverlapPatchEmbed(in_c=mid_dim // 2, out_c=out_dim)
