@@ -774,8 +774,8 @@ class SPUModel(BaseModel):
             # parser.add_argument('--lambda_C', type=float, default=100, help='')  # L1
             # parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
 
-            parser.add_argument('--lambda_A', type=float, default=0, help='')  # SSIM
+            parser.add_argument('--lambda_A', type=float, default=1, help='')  # SSIM
             parser.add_argument('--lambda_B', type=float, default=0, help='')  # netWork
-            parser.add_argument('--lambda_C', type=float, default=100, help='')  # L1
+            parser.add_argument('--lambda_C', type=float, default=0, help='')  # L1
             parser.add_argument('--lambda_D', type=float, default=0, help='')  # 全变差
         return parser
