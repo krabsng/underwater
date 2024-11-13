@@ -660,7 +660,7 @@ class SPUModel(BaseModel):
         self.SR = True
         self.Prompt = True
         # 损失的名称
-        self.loss_names = ['M', 'L1', 'SSIM', 'Net']
+        self.loss_names = ['M', 'L1', 'SSIM', 'NET']
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
         self.netSPU = SPUNet(SR=self.SR, Prompt=self.Prompt).to(self.device)
         if opt.distributed:

@@ -705,7 +705,7 @@ class SPUGANModel(BaseModel):
         self.SR = True  # 是否是进行超分辨率训练
         self.Prompt = True # 是否使用提示学习
         # 损失的名称
-        self.loss_names = ["G", "D"]
+        self.loss_names = ["G", "D", "L1", "SSIM", "NET", "L1", "GAN"]
         # 定义网络,并把网络放入gpu上训练,网络命名时要以net开头，便于保存网络模型
         self.netSPU = SPUNet(SR=True, Prompt=self.Prompt).to(self.device)
         if self.isTrain:
@@ -739,9 +739,9 @@ class SPUGANModel(BaseModel):
         vgg_model = vgg_model.to(self.device)
         self.L1_loss = nn.L1Loss() # 定义L1损失
         self.ssim_loss = SSIM()  # 定义L1smooth损失
-        self.network_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
+        self.net_loss = LossNetwork(vgg_model)  # 定义vgg网络损失
         # self.TotalVariation_loss = TotalVariationLoss()
-        self.network_loss.eval()  # 不计算梯度
+        self.net_loss.eval()  # 不计算梯度
         self.criterionGAN = networks.GANLoss("lsgan").to(self.device)  # 定义GAN损失.
         #endregion
 
@@ -791,11 +791,15 @@ class SPUGANModel(BaseModel):
 
         fake_AB = torch.cat((self.Origin_Pro_Img, self.Generate_Img), 1)
         pred_fake = self.netD(fake_AB)
+        self.loss_GAN = self.criterionGAN(pred_fake, True)
+        self.loss_L1 = self.L1_loss(self.Generate_Img, self.GT_Img)
+        self.loss_SSIM = self.ssim_loss(self.Generate_Img, self.GT_Img)
+        self.loss_NET = self.net_loss(self.Generate_Img, self.GT_Img)
 
-        self.loss_G = lambda_A * self.ssim_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_B * self.network_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_C * self.L1_loss(self.Generate_Img, self.GT_Img) + \
-                      lambda_E * self.criterionGAN(pred_fake, True)
+        self.loss_G = lambda_A * self.loss_SSIM +\
+                      lambda_B * self.loss_NET + \
+                      lambda_C * self.loss_L1 + \
+                      lambda_E * self.loss_GAN
         # lambda_D * self.TotalVariation_loss(self.Generate_Img) + \
         self.loss_G.backward()
 
